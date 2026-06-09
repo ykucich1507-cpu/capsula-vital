@@ -185,9 +185,8 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div className="imgph hero-img">
-              <i data-lucide="image" style={{width:52,height:52}}></i>
-              <span className="imgph-label">Foto del producto estrella</span>
+            <div className="hero-img" style={{borderRadius:22,overflow:'hidden'}}>
+              <img src="https://cdn.shopify.com/s/files/1/0794/4808/0616/files/imgi_6_17783404941774880653aspiradorarobot.jpg" alt="Aspiradora Robot Jessica" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:22}} />
             </div>
           </div>
         </div>
@@ -244,14 +243,17 @@ export default function Home() {
         <div className="wrap">
           <div className="spot-grid">
             <div className="spot-imgs">
-              <div className="imgph spot-main">
-                <i data-lucide="image" style={{width:52,height:52}}></i>
-                <span className="imgph-label">Foto principal</span>
+              <div className="spot-main" style={{borderRadius:22,overflow:'hidden'}}>
+                <img id="spot-main-img" src="https://cdn.shopify.com/s/files/1/0794/4808/0616/files/imgi_6_17783404941774880653aspiradorarobot.jpg" alt="Aspiradora Robot Jessica" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:22}} />
               </div>
               <div className="spot-thumbs">
-                {[0,1,2].map((i) => (
-                  <div key={i} className={`imgph spot-thumb${i===0?' active':''}`}>
-                    <i data-lucide="image" style={{width:20,height:20}}></i>
+                {[
+                  'https://cdn.shopify.com/s/files/1/0794/4808/0616/files/imgi_6_17783404941774880653aspiradorarobot.jpg',
+                  'https://cdn.shopify.com/s/files/1/0794/4808/0616/files/imgi_8_177834049417696244411761071309ASPIRADOROBOTJESSICA_2.jpg',
+                  'https://cdn.shopify.com/s/files/1/0794/4808/0616/files/v2_aspiradora.jpg',
+                ].map((src, i) => (
+                  <div key={i} className={`spot-thumb${i===0?' active':''}`} onClick={() => { const el = document.getElementById('spot-main-img') as HTMLImageElement; if(el) el.src = src; }}>
+                    <img src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} />
                   </div>
                 ))}
               </div>
