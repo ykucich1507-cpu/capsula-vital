@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "dropi": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "cwd": "/absolute/path/to/mcp-dropi",
+      "env": {
+        "DROPI_TOKEN": "your_jwt_token_here"
+      }
+    }
+  }
+}
