@@ -17,7 +17,7 @@ interface DayMetric {
 
 function buildEmailHtml(metrics: DayMetric[], weekLabel: string): string {
   const total = metrics.reduce(
-    (acc, m) => ({
+    (acc: { reach: number; interactions: number; likes: number; comments: number; shares: number; saves: number; views: number; newFollowers: number }, m) => ({
       reach: acc.reach + (m.reach ?? 0),
       interactions: acc.interactions + (m.total_interactions ?? 0),
       likes: acc.likes + (m.likes ?? 0),
