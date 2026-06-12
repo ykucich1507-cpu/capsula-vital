@@ -1,13 +1,10 @@
 {
   "mcpServers": {
     "n8n-mcp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "n8n-mcp"
-      ],
-      "env": {
-        "MCP_MODE": "stdio"
+      "type": "http",
+      "url": "https://yanitrend.app.n8n.cloud/mcp-server/http",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0ODI5ODc3NC1iMWZjLTQxYjUtYWJhZC05ODQ1MDMzZGM3Y2IiLCJpc3MiOiJuOG4iLCJhdWQiOiJtY3Atc2VydmVyLWFwaSIsImp0aSI6IjMxNGI4ZmQ5LWQwYjQtNDIyNy1hYzcxLWY4MjkwMzdlOGE2NyIsImlhdCI6MTc4MTI5NTQ1M30.19K-VjojJsgwDC23Z896wWKMvN_jtKulmPpTyp533hU"
       }
     }
   }
