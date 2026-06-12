@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "yanitrend-instagram": {
+      "command": "node",
+      "args": ["C:\\claude\\yanitrend-mcp\\index.js"],
+      "env": {}
+    }
+  }
+}
