@@ -1,0 +1,92 @@
+{
+  "name": "YaniTrend — Reporte Diario de Ventas",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Todos los días a las 8AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "order",
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "created_at_min": "={{ $now.minus({days: 1}).startOf('day').toISO() }}",
+          "created_at_max": "={{ $now.minus({days: 1}).endOf('day').toISO() }}",
+          "status": "any"
+        },
+        "options": {}
+      },
+      "id": "shopify-orders",
+      "name": "Shopify — Órdenes de Ayer",
+      "type": "n8n-nodes-base.shopify",
+      "typeVersion": 1,
+      "position": [480, 300],
+      "credentials": {
+        "shopifyApi": {
+          "id": "shopify-yanitrend",
+          "name": "Shopify YaniTrend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const orders = $input.all().map(i => i.json);\n\nconst total = orders.reduce((sum, o) => sum + parseFloat(o.total_price || 0), 0);\nconst pagadas = orders.filter(o => o.financial_status === 'paid').length;\nconst pendientes = orders.filter(o => o.financial_status === 'pending').length;\nconst canceladas = orders.filter(o => o.cancelled_at).length;\n\nconst fecha = new Date();\nfecha.setDate(fecha.getDate() - 1);\nconst fechaStr = fecha.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n\nconst filas = orders.map(o => {\n  const productos = o.line_items.map(l => `${l.quantity}x ${l.name}`).join(', ');\n  return `<tr>\n    <td style='padding:5px 10px'>#${o.order_number}</td>\n    <td style='padding:5px 10px'>${o.billing_address?.first_name || ''} ${o.billing_address?.last_name || ''}</td>\n    <td style='padding:5px 10px'>${productos}</td>\n    <td style='padding:5px 10px'>ARS ${parseFloat(o.total_price).toLocaleString('es-AR')}</td>\n    <td style='padding:5px 10px'>${o.financial_status}</td>\n  </tr>`;\n}).join('\\n');\n\nreturn [{\n  json: {\n    fecha: fechaStr,\n    totalOrdenes: orders.length,\n    totalVentas: total.toLocaleString('es-AR'),\n    pagadas,\n    pendientes,\n    canceladas,\n    filas,\n    sinOrdenes: orders.length === 0\n  }\n}];"
+      },
+      "id": "code-resumen",
+      "name": "Calcular Resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "ykucich1507@gmail.com",
+        "subject": "=📊 Reporte Yani Trend — {{ $json.fecha }}",
+        "emailType": "html",
+        "message": "=<div style='font-family:sans-serif;max-width:600px'>\n<h2>📊 Reporte diario — {{ $json.fecha }}</h2>\n\n{{ $json.sinOrdenes ? '<p>😴 Sin órdenes ayer. Hoy puede ser el día.</p>' : `\n<table style='width:100%;border-collapse:collapse;margin-bottom:20px'>\n  <tr>\n    <td style='background:#f4f6f8;padding:15px;border-radius:8px;text-align:center'>\n      <div style='font-size:32px;font-weight:bold;color:#5c6ac4'>${$json.totalOrdenes}</div>\n      <div style='color:#666'>Órdenes totales</div>\n    </td>\n    <td style='width:10px'></td>\n    <td style='background:#f4f6f8;padding:15px;border-radius:8px;text-align:center'>\n      <div style='font-size:32px;font-weight:bold;color:#108043'>ARS ${$json.totalVentas}</div>\n      <div style='color:#666'>Facturación total</div>\n    </td>\n  </tr>\n</table>\n\n<p>✅ Pagadas: <strong>${$json.pagadas}</strong> &nbsp;|&nbsp; ⏳ Pendientes: <strong>${$json.pendientes}</strong> &nbsp;|&nbsp; ❌ Canceladas: <strong>${$json.canceladas}</strong></p>\n\n<h3>Detalle de órdenes</h3>\n<table style='width:100%;border-collapse:collapse;font-size:13px'>\n  <thead><tr style='background:#5c6ac4;color:white'>\n    <th style='padding:8px 10px;text-align:left'>Orden</th>\n    <th style='padding:8px 10px;text-align:left'>Cliente</th>\n    <th style='padding:8px 10px;text-align:left'>Productos</th>\n    <th style='padding:8px 10px;text-align:left'>Total</th>\n    <th style='padding:8px 10px;text-align:left'>Estado</th>\n  </tr></thead>\n  <tbody>${$json.filas}</tbody>\n</table>` }}\n\n<p style='margin-top:20px'><a href='https://yanitrend.myshopify.com/admin/orders' style='background:#5c6ac4;color:white;padding:10px 20px;border-radius:5px;text-decoration:none'>Ver todas las órdenes →</a></p>\n</div>",
+        "options": {}
+      },
+      "id": "gmail-reporte",
+      "name": "Gmail — Enviar Reporte",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [960, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail-yanitrend",
+          "name": "Gmail YaniTrend"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Todos los días a las 8AM": {
+      "main": [[{ "node": "Shopify — Órdenes de Ayer", "type": "main", "index": 0 }]]
+    },
+    "Shopify — Órdenes de Ayer": {
+      "main": [[{ "node": "Calcular Resumen", "type": "main", "index": 0 }]]
+    },
+    "Calcular Resumen": {
+      "main": [[{ "node": "Gmail — Enviar Reporte", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["yanitrend", "shopify", "reportes"]
+}
