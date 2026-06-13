@@ -1,0 +1,86 @@
+{
+  "name": "YaniTrend — Instagram DM a Nuevos Seguidores",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 2 }]
+        }
+      },
+      "id": "schedule",
+      "name": "Revisar nuevos seguidores cada 2h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_ACCOUNT_ID }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "followers_count" },
+            { "name": "access_token", "value": "={{ $env.INSTAGRAM_ACCESS_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "get-followers",
+      "name": "Obtener seguidores actuales",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_ACCOUNT_ID }}/recently_followed",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "access_token", "value": "={{ $env.INSTAGRAM_ACCESS_TOKEN }}" },
+            { "name": "limit", "value": "10" }
+          ]
+        }
+      },
+      "id": "get-new-followers",
+      "name": "Obtener nuevos seguidores",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split",
+      "name": "Separar seguidores",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_ACCOUNT_ID }}/messages",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recipient\": { \"id\": \"{{ $json.id }}\" },\n  \"message\": {\n    \"text\": \"¡Hola @{{ $json.username }}! 👋 Gracias por seguirnos en Yani Trend 🌸\\n\\nSomos una tienda argentina donde podés comprar productos increíbles para el hogar y bienestar, y lo mejor: ¡pagás cuando lo tenés en tus manos! Sin tarjetas, sin adelantos 🙌\\n\\nDate una vuelta por nuestros productos y si tenés alguna duda escribinos por acá, respondemos rápido 💬\\n\\n👉 Ver productos: yanitrend.com\"\n  },\n  \"access_token\": \"{{ $env.INSTAGRAM_ACCESS_TOKEN }}\"\n}"
+      },
+      "id": "send-dm",
+      "name": "Enviar DM de bienvenida",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 300]
+    }
+  ],
+  "connections": {
+    "Revisar nuevos seguidores cada 2h": { "main": [[{ "node": "Obtener seguidores actuales", "type": "main", "index": 0 }]] },
+    "Obtener seguidores actuales": { "main": [[{ "node": "Obtener nuevos seguidores", "type": "main", "index": 0 }]] },
+    "Obtener nuevos seguidores": { "main": [[{ "node": "Separar seguidores", "type": "main", "index": 0 }]] },
+    "Separar seguidores": { "main": [[{ "node": "Enviar DM de bienvenida", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "instagram", "dm", "seguidores"]
+}

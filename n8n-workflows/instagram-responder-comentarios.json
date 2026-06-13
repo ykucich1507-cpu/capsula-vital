@@ -1,0 +1,144 @@
+{
+  "name": "YaniTrend — Instagram Responder Comentarios con IA",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 30 }]
+        }
+      },
+      "id": "schedule",
+      "name": "Revisar comentarios cada 30min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_ACCOUNT_ID }}/media",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "id,caption,timestamp" },
+            { "name": "limit", "value": "5" },
+            { "name": "access_token", "value": "={{ $env.INSTAGRAM_ACCESS_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "get-media",
+      "name": "Traer últimos 5 posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split-posts",
+      "name": "Separar posts",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v19.0/{{ $json.id }}/comments",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "id,text,username,timestamp,replies{id,text}" },
+            { "name": "filter", "value": "stream" },
+            { "name": "access_token", "value": "={{ $env.INSTAGRAM_ACCESS_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "get-comments",
+      "name": "Traer comentarios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split-comments",
+      "name": "Separar comentarios",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1140, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.replies }}",
+              "rightValue": "",
+              "operator": { "type": "object", "operation": "empty" }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-sin-respuesta",
+      "name": "¿Sin respuesta aún?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1360, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-haiku-4-5-20251001",
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=Sos la community manager de Yani Trend, una tienda argentina de e-commerce con pago contra entrega. Respondé el siguiente comentario de Instagram de forma breve (1-2 oraciones), amigable, con voseo rioplatense y emojis apropiados. Si preguntan por precio o compra, deciles que hagan clic en el link de la bio. NO uses palabras como 'lamentablemente' ni seas robótica.\n\nComentario de @{{ $json.username }}: \"{{ $json.text }}\"\n\nRespondé solo con el texto de la respuesta, sin comillas ni explicaciones."
+            }
+          ]
+        },
+        "options": { "maxTokens": 150 }
+      },
+      "id": "claude-respuesta",
+      "name": "Claude genera respuesta",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [1580, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $('Separar comentarios').item.json.id }}/replies",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "message", "value": "={{ $json.text }}" },
+            { "name": "access_token", "value": "={{ $env.INSTAGRAM_ACCESS_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "ig-reply",
+      "name": "Publicar respuesta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1800, 220]
+    }
+  ],
+  "connections": {
+    "Revisar comentarios cada 30min": { "main": [[{ "node": "Traer últimos 5 posts", "type": "main", "index": 0 }]] },
+    "Traer últimos 5 posts": { "main": [[{ "node": "Separar posts", "type": "main", "index": 0 }]] },
+    "Separar posts": { "main": [[{ "node": "Traer comentarios", "type": "main", "index": 0 }]] },
+    "Traer comentarios": { "main": [[{ "node": "Separar comentarios", "type": "main", "index": 0 }]] },
+    "Separar comentarios": { "main": [[{ "node": "¿Sin respuesta aún?", "type": "main", "index": 0 }]] },
+    "¿Sin respuesta aún?": { "main": [[{ "node": "Claude genera respuesta", "type": "main", "index": 0 }], []] },
+    "Claude genera respuesta": { "main": [[{ "node": "Publicar respuesta", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "instagram", "comentarios", "ia"]
+}

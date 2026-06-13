@@ -1,0 +1,91 @@
+{
+  "name": "YaniTrend — Instagram Reporte Diario de Métricas",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "triggerAtHour": 9, "triggerAtMinute": 0 }]
+        }
+      },
+      "id": "schedule",
+      "name": "Todos los días a las 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_ACCOUNT_ID }}/insights",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "metric", "value": "impressions,reach,profile_views,follower_count,website_clicks" },
+            { "name": "period", "value": "day" },
+            { "name": "access_token", "value": "={{ $env.INSTAGRAM_ACCESS_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "get-account-insights",
+      "name": "Métricas de la cuenta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 220]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.INSTAGRAM_ACCOUNT_ID }}/media",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "id,caption,timestamp,like_count,comments_count,insights.metric(impressions,reach,saved)" },
+            { "name": "limit", "value": "5" },
+            { "name": "access_token", "value": "={{ $env.INSTAGRAM_ACCESS_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "get-posts-insights",
+      "name": "Métricas de últimos posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 420]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const accountData = $('Métricas de la cuenta').item.json.data || [];\nconst postsData = $('Métricas de últimos posts').item.json.data || [];\n\nconst getMetric = (name) => {\n  const m = accountData.find(d => d.name === name);\n  return m?.values?.[1]?.value ?? 0;\n};\n\nconst fecha = new Date();\nfecha.setDate(fecha.getDate() - 1);\nconst fechaStr = fecha.toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n\nconst postsHtml = postsData.map(p => {\n  const caption = (p.caption || '').slice(0, 60) + ((p.caption || '').length > 60 ? '...' : '');\n  const imp = p.insights?.data?.find(d => d.name === 'impressions')?.values?.[0]?.value ?? '—';\n  const reach = p.insights?.data?.find(d => d.name === 'reach')?.values?.[0]?.value ?? '—';\n  const saved = p.insights?.data?.find(d => d.name === 'saved')?.values?.[0]?.value ?? '—';\n  return `<tr>\n    <td style='padding:6px 10px;font-size:13px'>${caption}</td>\n    <td style='padding:6px 10px;text-align:center'>❤️ ${p.like_count || 0}</td>\n    <td style='padding:6px 10px;text-align:center'>💬 ${p.comments_count || 0}</td>\n    <td style='padding:6px 10px;text-align:center'>👁️ ${imp}</td>\n    <td style='padding:6px 10px;text-align:center'>📍 ${reach}</td>\n    <td style='padding:6px 10px;text-align:center'>🔖 ${saved}</td>\n  </tr>`;\n}).join('');\n\nreturn [{\n  json: {\n    fechaStr,\n    impresiones: getMetric('impressions').toLocaleString('es-AR'),\n    alcance: getMetric('reach').toLocaleString('es-AR'),\n    visitas_perfil: getMetric('profile_views').toLocaleString('es-AR'),\n    clicks_web: getMetric('website_clicks').toLocaleString('es-AR'),\n    seguidores: getMetric('follower_count').toLocaleString('es-AR'),\n    postsHtml\n  }\n}];"
+      },
+      "id": "code-resumen",
+      "name": "Calcular resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "ykucich1507@gmail.com",
+        "subject": "=📸 Instagram Yani Trend — {{ $json.fechaStr }}",
+        "emailType": "html",
+        "message": "=<div style='font-family:sans-serif;max-width:620px'>\n<h2>📸 Reporte Instagram — {{ $json.fechaStr }}</h2>\n\n<table style='width:100%;border-collapse:collapse;margin-bottom:24px'>\n  <tr>\n    <td style='background:#FBE0EF;padding:16px;border-radius:10px;text-align:center;width:20%'>\n      <div style='font-size:26px;font-weight:700;color:#E6007E'>{{ $json.impresiones }}</div>\n      <div style='font-size:12px;color:#666'>Impresiones</div>\n    </td>\n    <td style='width:8px'></td>\n    <td style='background:#FBE0EF;padding:16px;border-radius:10px;text-align:center;width:20%'>\n      <div style='font-size:26px;font-weight:700;color:#E6007E'>{{ $json.alcance }}</div>\n      <div style='font-size:12px;color:#666'>Alcance</div>\n    </td>\n    <td style='width:8px'></td>\n    <td style='background:#F3E9DF;padding:16px;border-radius:10px;text-align:center;width:20%'>\n      <div style='font-size:26px;font-weight:700;color:#2B2B2B'>{{ $json.visitas_perfil }}</div>\n      <div style='font-size:12px;color:#666'>Visitas perfil</div>\n    </td>\n    <td style='width:8px'></td>\n    <td style='background:#F3E9DF;padding:16px;border-radius:10px;text-align:center;width:20%'>\n      <div style='font-size:26px;font-weight:700;color:#2B2B2B'>{{ $json.clicks_web }}</div>\n      <div style='font-size:12px;color:#666'>Clicks al sitio</div>\n    </td>\n    <td style='width:8px'></td>\n    <td style='background:#EEF0FC;padding:16px;border-radius:10px;text-align:center;width:20%'>\n      <div style='font-size:26px;font-weight:700;color:#5C6AC4'>{{ $json.seguidores }}</div>\n      <div style='font-size:12px;color:#666'>Seguidores</div>\n    </td>\n  </tr>\n</table>\n\n<h3>📊 Rendimiento de últimos posts</h3>\n<table style='width:100%;border-collapse:collapse;font-size:13px'>\n  <thead>\n    <tr style='background:#E6007E;color:white'>\n      <th style='padding:8px 10px;text-align:left'>Caption</th>\n      <th style='padding:8px 10px'>Likes</th>\n      <th style='padding:8px 10px'>Comentarios</th>\n      <th style='padding:8px 10px'>Impresiones</th>\n      <th style='padding:8px 10px'>Alcance</th>\n      <th style='padding:8px 10px'>Guardados</th>\n    </tr>\n  </thead>\n  <tbody>{{ $json.postsHtml }}</tbody>\n</table>\n\n<p style='margin-top:24px'>\n  <a href='https://www.instagram.com/yanitrend.ar/' style='background:#E6007E;color:white;padding:10px 20px;border-radius:8px;text-decoration:none'>Ver perfil en Instagram →</a>\n</p>\n</div>",
+        "options": {}
+      },
+      "id": "gmail-send",
+      "name": "Enviar reporte por Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1000, 300],
+      "credentials": {
+        "gmailOAuth2": { "id": "gmail-yanitrend", "name": "Gmail YaniTrend" }
+      }
+    }
+  ],
+  "connections": {
+    "Todos los días a las 9AM": { "main": [[{ "node": "Métricas de la cuenta", "type": "main", "index": 0 }, { "node": "Métricas de últimos posts", "type": "main", "index": 0 }]] },
+    "Métricas de la cuenta": { "main": [[{ "node": "Calcular resumen", "type": "main", "index": 0 }]] },
+    "Métricas de últimos posts": { "main": [[{ "node": "Calcular resumen", "type": "main", "index": 0 }]] },
+    "Calcular resumen": { "main": [[{ "node": "Enviar reporte por Gmail", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "instagram", "metricas", "reportes"]
+}
