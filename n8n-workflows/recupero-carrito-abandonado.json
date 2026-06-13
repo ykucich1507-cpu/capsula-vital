@@ -1,0 +1,122 @@
+{
+  "name": "YaniTrend — Recupero de Carrito Abandonado",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } },
+      "id": "schedule",
+      "name": "Revisar cada hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://bjusti-i6.myshopify.com/admin/api/2024-01/checkouts.json",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "X-Shopify-Access-Token", "value": "={{ $env.SHOPIFY_ACCESS_TOKEN }}" }] },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "created_at_min", "value": "={{ $now.minus({hours: 2}).toISO() }}" },
+            { "name": "created_at_max", "value": "={{ $now.minus({hours: 1}).toISO() }}" },
+            { "name": "limit", "value": "50" }
+          ]
+        }
+      },
+      "id": "get-checkouts",
+      "name": "Traer carritos abandonados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": { "fieldToSplitOut": "checkouts", "options": {} },
+      "id": "split",
+      "name": "Separar carritos",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            { "leftValue": "={{ $json.completed_at }}", "rightValue": "", "operator": { "type": "string", "operation": "empty" } },
+            { "leftValue": "={{ $json.email }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty" } }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-abandonado",
+      "name": "¿Abandonado con email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.item.json;\nconst nombre = d.billing_address?.first_name || d.shipping_address?.first_name || 'hola';\nconst producto = d.line_items?.[0]?.title || 'los productos que elegiste';\nconst total = parseFloat(d.total_price || 0).toLocaleString('es-AR');\nconst url = d.abandoned_checkout_url || 'https://yanitrend.com';\nconst phone = (d.billing_address?.phone || d.shipping_address?.phone || '').replace(/\\D/g, '');\nconst intlPhone = phone ? (phone.startsWith('54') ? phone : '54' + phone.replace(/^0/, '')) : '';\nreturn [{ json: { email: d.email, nombre, producto, total, url, phone: intlPhone } }];"
+      },
+      "id": "format",
+      "name": "Formatear datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 220]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.nombre }}, tu pedido te está esperando 🛍️",
+        "emailType": "html",
+        "message": "=<div style='font-family:sans-serif;max-width:560px'>\n<h2>¡Ey {{ $json.nombre }}! Casi lo tenés 😊</h2>\n<p style='font-size:15px;color:#555;line-height:1.6'>Te olvidaste de terminar tu pedido de <strong>{{ $json.producto }}</strong>.</p>\n<p style='font-size:15px;color:#555;line-height:1.6'>Recordá que en Yani Trend <strong>pagás cuando lo tenés en tus manos</strong> — sin adelantar ni un peso. Sin tarjetas, sin riesgo.</p>\n<div style='background:#FBE0EF;border-radius:12px;padding:20px;margin:24px 0;text-align:center'>\n  <div style='font-size:13px;color:#666;margin-bottom:4px'>Total de tu pedido</div>\n  <div style='font-size:32px;font-weight:700;color:#E6007E'>ARS ${{ $json.total }}</div>\n  <div style='font-size:13px;color:#666;margin-top:4px'>🚚 Envío gratis a todo el país</div>\n</div>\n<a href='{{ $json.url }}' style='display:block;background:#E6007E;color:white;text-align:center;padding:14px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px'>Terminar mi pedido →</a>\n<p style='font-size:13px;color:#999;margin-top:20px;text-align:center'>¿Tuviste algún problema? Respondé este email y te ayudamos.</p>\n</div>",
+        "options": {}
+      },
+      "id": "email-send",
+      "name": "Email de recupero",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1380, 160],
+      "credentials": { "gmailOAuth2": { "id": "gmail-yanitrend", "name": "Gmail YaniTrend" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{ "leftValue": "={{ $json.phone }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "check-phone",
+      "name": "¿Tiene teléfono?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1380, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Formatear datos').item.json.phone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"¡Ey {{ $('Formatear datos').item.json.nombre }}! 👋\\n\\nVimos que dejaste *{{ $('Formatear datos').item.json.producto }}* en el carrito.\\n\\n🛍️ Tu pedido te espera — recordá que *pagás en efectivo cuando llega a tu puerta*. Sin adelantar nada.\\n\\nTerminalo acá 👇\\n{{ $('Formatear datos').item.json.url }}\"\n  }\n}"
+      },
+      "id": "whatsapp-send",
+      "name": "WhatsApp de recupero",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1620, 280]
+    }
+  ],
+  "connections": {
+    "Revisar cada hora": { "main": [[{ "node": "Traer carritos abandonados", "type": "main", "index": 0 }]] },
+    "Traer carritos abandonados": { "main": [[{ "node": "Separar carritos", "type": "main", "index": 0 }]] },
+    "Separar carritos": { "main": [[{ "node": "¿Abandonado con email?", "type": "main", "index": 0 }]] },
+    "¿Abandonado con email?": { "main": [[{ "node": "Formatear datos", "type": "main", "index": 0 }], []] },
+    "Formatear datos": { "main": [[{ "node": "Email de recupero", "type": "main", "index": 0 }, { "node": "¿Tiene teléfono?", "type": "main", "index": 0 }]] },
+    "¿Tiene teléfono?": { "main": [[{ "node": "WhatsApp de recupero", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "ventas", "carrito-abandonado"]
+}

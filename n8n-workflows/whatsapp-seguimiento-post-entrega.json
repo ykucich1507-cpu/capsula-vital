@@ -1,0 +1,80 @@
+{
+  "name": "YaniTrend — WhatsApp Seguimiento Post-Entrega (Reseña)",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "triggerAtHour": 11, "triggerAtMinute": 0 }] } },
+      "id": "schedule",
+      "name": "Todos los días a las 11AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "order",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 50,
+        "filters": {
+          "fulfillment_status": "fulfilled",
+          "updated_at_min": "={{ $now.minus({days: 4}).toISO() }}",
+          "updated_at_max": "={{ $now.minus({days: 3}).toISO() }}"
+        },
+        "options": {}
+      },
+      "id": "shopify-orders",
+      "name": "Órdenes entregadas hace 3 días",
+      "type": "n8n-nodes-base.shopify",
+      "typeVersion": 1,
+      "position": [480, 300],
+      "credentials": { "shopifyApi": { "id": "shopify-yanitrend", "name": "Shopify YaniTrend" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{ "leftValue": "={{ $json.phone || $json.billing_address?.phone }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "check-phone",
+      "name": "¿Tiene teléfono?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.item.json;\nconst phone = (d.phone || d.billing_address?.phone || '').replace(/\\D/g, '');\nconst intlPhone = phone.startsWith('54') ? phone : '54' + phone.replace(/^0/, '');\nconst nombre = d.billing_address?.first_name || 'Cliente';\nconst producto = d.line_items?.[0]?.name || 'tu producto';\nconst orden = d.order_number;\nreturn [{ json: { phone: intlPhone, nombre, producto, orden } }];"
+      },
+      "id": "format",
+      "name": "Formatear datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.phone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"¡Hola {{ $json.nombre }}! 😊\\n\\nEsperamos que ya estés disfrutando de *{{ $json.producto }}* — orden #{{ $json.orden }}.\\n\\n⭐ ¿Podemos pedirte un favor? Tu opinión nos ayuda un montón a seguir mejorando. ¿Cómo llegó todo?\\n\\nSi tuviste algún problema, avisanos acá mismo y lo resolvemos enseguida 🙏\"\n  }\n}"
+      },
+      "id": "whatsapp-send",
+      "name": "Enviar WhatsApp de seguimiento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 220]
+    }
+  ],
+  "connections": {
+    "Todos los días a las 11AM": { "main": [[{ "node": "Órdenes entregadas hace 3 días", "type": "main", "index": 0 }]] },
+    "Órdenes entregadas hace 3 días": { "main": [[{ "node": "¿Tiene teléfono?", "type": "main", "index": 0 }]] },
+    "¿Tiene teléfono?": { "main": [[{ "node": "Formatear datos", "type": "main", "index": 0 }], []] },
+    "Formatear datos": { "main": [[{ "node": "Enviar WhatsApp de seguimiento", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "whatsapp", "postventa"]
+}

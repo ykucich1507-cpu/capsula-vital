@@ -1,0 +1,34 @@
+{
+  "name": "YaniTrend — Alerta Orden Cancelada",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "yanitrend-order-cancelled", "options": {} },
+      "id": "webhook",
+      "name": "Shopify — Orden Cancelada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "yanitrend-order-cancelled"
+    },
+    {
+      "parameters": {
+        "sendTo": "ykucich1507@gmail.com",
+        "subject": "=❌ Orden #{{ $json.order_number }} cancelada — {{ $json.billing_address?.first_name }} {{ $json.billing_address?.last_name }}",
+        "emailType": "html",
+        "message": "=<div style='font-family:sans-serif;max-width:560px'>\n<h2 style='color:#C62828'>❌ Orden cancelada</h2>\n<table style='font-size:14px;border-collapse:collapse;width:100%'>\n  <tr><td style='padding:6px 10px;font-weight:600'>Orden #</td><td>{{ $json.order_number }}</td></tr>\n  <tr><td style='padding:6px 10px;font-weight:600'>Cliente</td><td>{{ $json.billing_address?.first_name }} {{ $json.billing_address?.last_name }}</td></tr>\n  <tr><td style='padding:6px 10px;font-weight:600'>Email</td><td>{{ $json.email }}</td></tr>\n  <tr><td style='padding:6px 10px;font-weight:600'>Teléfono</td><td>{{ $json.billing_address?.phone || '—' }}</td></tr>\n  <tr><td style='padding:6px 10px;font-weight:600'>Total perdido</td><td><strong>ARS {{ $json.total_price }}</strong></td></tr>\n  <tr><td style='padding:6px 10px;font-weight:600'>Motivo</td><td>{{ $json.cancel_reason || 'No especificado' }}</td></tr>\n  <tr><td style='padding:6px 10px;font-weight:600'>Productos</td><td>{{ $json.line_items?.map(i => i.name).join(', ') }}</td></tr>\n</table>\n<div style='background:#FFF3CD;border:1px solid #FFE082;border-radius:10px;padding:16px;margin-top:20px'>\n  <strong>💡 Sugerencia:</strong> Si el cliente canceló por dudas, podés contactarlo por WhatsApp: <strong>{{ $json.billing_address?.phone }}</strong> y ofrecerle aclarar cómo funciona el pago contra entrega.\n</div>\n<p style='margin-top:16px'><a href='https://admin.shopify.com/store/bjusti-i6/orders/{{ $json.id }}' style='background:#C62828;color:white;padding:10px 20px;border-radius:8px;text-decoration:none'>Ver orden →</a></p>\n</div>",
+        "options": {}
+      },
+      "id": "email-alerta",
+      "name": "Email — Alerta cancelación",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [480, 300],
+      "credentials": { "gmailOAuth2": { "id": "gmail-yanitrend", "name": "Gmail YaniTrend" } }
+    }
+  ],
+  "connections": {
+    "Shopify — Orden Cancelada": { "main": [[{ "node": "Email — Alerta cancelación", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "ordenes", "alertas"]
+}

@@ -1,0 +1,98 @@
+{
+  "name": "YaniTrend — Meta Ads Pausa Automática ROAS Bajo",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "triggerAtHour": 7, "triggerAtMinute": 0 }, { "triggerAtHour": 19, "triggerAtMinute": 0 }] } },
+      "id": "schedule",
+      "name": "Revisar 2 veces al día",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://graph.facebook.com/v19.0/act_1309758261308011/ads",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN }}" }] },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "id,name,status,insights{spend,purchase_roas,actions}" },
+            { "name": "date_preset", "value": "last_3d" },
+            { "name": "effective_status", "value": "[\"ACTIVE\"]" },
+            { "name": "limit", "value": "50" }
+          ]
+        }
+      },
+      "id": "get-ads",
+      "name": "Traer anuncios activos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const ROAS_MINIMO = 1.5;\nconst GASTO_MINIMO = 500;\nconst ads = $input.all().flatMap(i => i.json.data || []);\nconst pausar = [];\nfor (const ad of ads) {\n  const insights = ad.insights?.data?.[0];\n  if (!insights) continue;\n  const gasto = parseFloat(insights.spend || 0);\n  const roas = parseFloat(insights.purchase_roas?.[0]?.value || 0);\n  if (gasto >= GASTO_MINIMO && roas < ROAS_MINIMO && roas > 0) {\n    pausar.push({ id: ad.id, nombre: ad.name, gasto: gasto.toFixed(2), roas: roas.toFixed(2) });\n  }\n}\nreturn pausar.length > 0 ? pausar.map(a => ({ json: a })) : [{ json: { nada: true } }];"
+      },
+      "id": "check-roas",
+      "name": "Detectar ROAS < 1.5 con gasto > $500",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{ "leftValue": "={{ $json.nada }}", "rightValue": true, "operator": { "type": "boolean", "operation": "notEquals" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "check",
+      "name": "¿Hay ads para pausar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN }}" }] },
+        "sendBody": true,
+        "bodyParameters": { "parameters": [{ "name": "status", "value": "PAUSED" }] }
+      },
+      "id": "pause-ad",
+      "name": "Pausar anuncio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 220]
+    },
+    {
+      "parameters": {
+        "sendTo": "ykucich1507@gmail.com",
+        "subject": "=🛑 Anuncio pausado por ROAS bajo — {{ $json.nombre }}",
+        "emailType": "html",
+        "message": "=<div style='font-family:sans-serif;max-width:560px'>\n<h2>🛑 Anuncio pausado automáticamente</h2>\n<p>El siguiente anuncio fue pausado porque su ROAS cayó por debajo del umbral mínimo:</p>\n<table style='font-size:14px;border-collapse:collapse;width:100%'>\n  <tr style='background:#FFF3CD'><td style='padding:8px 12px;font-weight:600'>Anuncio</td><td style='padding:8px 12px'>{{ $json.nombre }}</td></tr>\n  <tr><td style='padding:8px 12px;font-weight:600'>ROAS (3 días)</td><td style='padding:8px 12px;color:#C62828;font-weight:700'>{{ $json.roas }}x (mínimo: 1.5x)</td></tr>\n  <tr style='background:#FFF3CD'><td style='padding:8px 12px;font-weight:600'>Gasto</td><td style='padding:8px 12px'>USD ${{ $json.gasto }}</td></tr>\n</table>\n<p style='margin-top:16px;color:#555'>Revisá el anuncio y decidí si lo reactivás, ajustás el creativo o lo dejás pausado.</p>\n<a href='https://business.facebook.com/adsmanager' style='display:inline-block;background:#1877F2;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;margin-top:8px'>Ver en Ads Manager →</a>\n</div>",
+        "options": {}
+      },
+      "id": "email-notif",
+      "name": "Notificar por email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1380, 220],
+      "credentials": { "gmailOAuth2": { "id": "gmail-yanitrend", "name": "Gmail YaniTrend" } }
+    }
+  ],
+  "connections": {
+    "Revisar 2 veces al día": { "main": [[{ "node": "Traer anuncios activos", "type": "main", "index": 0 }]] },
+    "Traer anuncios activos": { "main": [[{ "node": "Detectar ROAS < 1.5 con gasto > $500", "type": "main", "index": 0 }]] },
+    "Detectar ROAS < 1.5 con gasto > $500": { "main": [[{ "node": "¿Hay ads para pausar?", "type": "main", "index": 0 }]] },
+    "¿Hay ads para pausar?": { "main": [[{ "node": "Pausar anuncio", "type": "main", "index": 0 }], []] },
+    "Pausar anuncio": { "main": [[{ "node": "Notificar por email", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "meta-ads", "automatizacion"]
+}

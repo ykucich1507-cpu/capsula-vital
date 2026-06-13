@@ -1,0 +1,75 @@
+{
+  "name": "YaniTrend — Alerta de Stock Bajo",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "triggerAtHour": 8, "triggerAtMinute": 30 }] } },
+      "id": "schedule",
+      "name": "Todos los días a las 8:30AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://bjusti-i6.myshopify.com/admin/api/2024-01/products.json",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "X-Shopify-Access-Token", "value": "={{ $env.SHOPIFY_ACCESS_TOKEN }}" }] },
+        "sendQuery": true,
+        "queryParameters": { "parameters": [{ "name": "limit", "value": "100" }, { "name": "status", "value": "active" }] }
+      },
+      "id": "get-products",
+      "name": "Traer productos activos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const productos = $input.all().flatMap(i => i.json.products || []);\nconst UMBRAL = 5;\nconst bajos = [];\nfor (const p of productos) {\n  for (const v of p.variants || []) {\n    if (v.inventory_management === 'shopify' && v.inventory_quantity <= UMBRAL) {\n      bajos.push({\n        nombre: p.title + (v.title !== 'Default Title' ? ` — ${v.title}` : ''),\n        stock: v.inventory_quantity,\n        sku: v.sku || '—',\n        id: p.id\n      });\n    }\n  }\n}\nif (bajos.length === 0) return [{ json: { hayAlertas: false } }];\nconst filas = bajos.map(b => `<tr><td style='padding:6px 10px'>${b.nombre}</td><td style='padding:6px 10px;text-align:center;color:${b.stock === 0 ? '#C62828' : '#E65100'};font-weight:700'>${b.stock === 0 ? '⚠️ SIN STOCK' : b.stock}</td><td style='padding:6px 10px'>${b.sku}</td></tr>`).join('');\nreturn [{ json: { hayAlertas: true, filas, cantidad: bajos.length } }];"
+      },
+      "id": "check-stock",
+      "name": "Detectar stock bajo (< 5 unidades)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{ "leftValue": "={{ $json.hayAlertas }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "check",
+      "name": "¿Hay productos con stock bajo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "ykucich1507@gmail.com",
+        "subject": "=⚠️ {{ $json.cantidad }} producto(s) con stock bajo — Yani Trend",
+        "emailType": "html",
+        "message": "=<div style='font-family:sans-serif;max-width:560px'>\n<h2>⚠️ Alerta de stock bajo</h2>\n<p style='color:#555'>Los siguientes productos tienen 5 unidades o menos en Shopify:</p>\n<table style='width:100%;border-collapse:collapse;font-size:14px'>\n  <thead><tr style='background:#E65100;color:white'>\n    <th style='padding:8px 10px;text-align:left'>Producto</th>\n    <th style='padding:8px 10px'>Stock</th>\n    <th style='padding:8px 10px;text-align:left'>SKU</th>\n  </tr></thead>\n  <tbody>{{ $json.filas }}</tbody>\n</table>\n<p style='margin-top:20px'><a href='https://admin.shopify.com/store/bjusti-i6/products' style='background:#E65100;color:white;padding:10px 20px;border-radius:8px;text-decoration:none'>Ver inventario →</a></p>\n</div>",
+        "options": {}
+      },
+      "id": "email-alerta",
+      "name": "Email — Alerta stock",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1140, 220],
+      "credentials": { "gmailOAuth2": { "id": "gmail-yanitrend", "name": "Gmail YaniTrend" } }
+    }
+  ],
+  "connections": {
+    "Todos los días a las 8:30AM": { "main": [[{ "node": "Traer productos activos", "type": "main", "index": 0 }]] },
+    "Traer productos activos": { "main": [[{ "node": "Detectar stock bajo (< 5 unidades)", "type": "main", "index": 0 }]] },
+    "Detectar stock bajo (< 5 unidades)": { "main": [[{ "node": "¿Hay productos con stock bajo?", "type": "main", "index": 0 }]] },
+    "¿Hay productos con stock bajo?": { "main": [[{ "node": "Email — Alerta stock", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "stock", "alertas"]
+}

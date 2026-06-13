@@ -1,0 +1,65 @@
+{
+  "name": "YaniTrend — Caption Automático para Producto Nuevo",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "yanitrend-product-created", "options": {} },
+      "id": "webhook",
+      "name": "Shopify — Producto Creado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "yanitrend-product-created"
+    },
+    {
+      "parameters": {
+        "model": "claude-haiku-4-5-20251001",
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "=Sos la community manager de Yani Trend, tienda argentina de e-commerce con pago contra entrega. Generá contenido de marketing para este nuevo producto.\n\nProducto: {{ $json.title }}\nDescripción: {{ $json.body_html?.replace(/<[^>]*>/g, '') || 'Sin descripción' }}\nPrecio: ARS ${{ $json.variants?.[0]?.price }}\n\nGenerá en formato JSON puro sin markdown:\n{\n  \"caption_instagram\": \"caption con emojis, voseo argentino, máximo 150 palabras, con CTA al link de bio\",\n  \"hashtags\": \"20 hashtags para Argentina separados por espacio\",\n  \"copy_meta_ads\": \"anuncio de 80 palabras para Facebook/Instagram Ads mencionando pago contra entrega\",\n  \"descripcion_shopify\": \"descripción SEO de 3 párrafos para la ficha del producto en Shopify\"\n}"
+            }
+          ]
+        },
+        "options": { "maxTokens": 800 }
+      },
+      "id": "claude-content",
+      "name": "Claude genera contenido",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.item.json.text || '';\nconst start = raw.indexOf('{');\nconst end = raw.lastIndexOf('}') + 1;\ntry {\n  const parsed = JSON.parse(raw.slice(start, end));\n  return [{ json: { ...parsed, producto: $('Shopify — Producto Creado').item.json.title } }];\n} catch {\n  return [{ json: { error: true, raw } }];\n}"
+      },
+      "id": "parse-json",
+      "name": "Parsear respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "ykucich1507@gmail.com",
+        "subject": "=✨ Contenido listo para: {{ $json.producto }}",
+        "emailType": "html",
+        "message": "=<div style='font-family:sans-serif;max-width:620px'>\n<h2>✨ Kit de contenido generado automáticamente</h2>\n<p style='color:#555'>Nuevo producto detectado: <strong>{{ $json.producto }}</strong></p>\n\n<h3>📸 Caption Instagram</h3>\n<div style='background:#F7F7F8;border:1px solid #ECECEC;border-radius:10px;padding:16px;font-size:14px;line-height:1.7;white-space:pre-wrap'>{{ $json.caption_instagram }}\n\n{{ $json.hashtags }}</div>\n\n<h3 style='margin-top:20px'>📱 Anuncio Meta Ads</h3>\n<div style='background:#F7F7F8;border:1px solid #ECECEC;border-radius:10px;padding:16px;font-size:14px;line-height:1.7'>{{ $json.copy_meta_ads }}</div>\n\n<h3 style='margin-top:20px'>🛍️ Descripción Shopify</h3>\n<div style='background:#F7F7F8;border:1px solid #ECECEC;border-radius:10px;padding:16px;font-size:14px;line-height:1.7'>{{ $json.descripcion_shopify }}</div>\n</div>",
+        "options": {}
+      },
+      "id": "email-send",
+      "name": "Enviar contenido por email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [920, 300],
+      "credentials": { "gmailOAuth2": { "id": "gmail-yanitrend", "name": "Gmail YaniTrend" } }
+    }
+  ],
+  "connections": {
+    "Shopify — Producto Creado": { "main": [[{ "node": "Claude genera contenido", "type": "main", "index": 0 }]] },
+    "Claude genera contenido": { "main": [[{ "node": "Parsear respuesta", "type": "main", "index": 0 }]] },
+    "Parsear respuesta": { "main": [[{ "node": "Enviar contenido por email", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "ia", "contenido", "shopify"]
+}

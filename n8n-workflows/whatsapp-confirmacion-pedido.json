@@ -1,0 +1,60 @@
+{
+  "name": "YaniTrend — WhatsApp Confirmación de Pedido",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "yanitrend-order-create", "options": {} },
+      "id": "webhook",
+      "name": "Shopify — Orden Nueva",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "yanitrend-order-create"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{ "leftValue": "={{ $json.phone || $json.billing_address?.phone }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "check-phone",
+      "name": "¿Tiene teléfono?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.item.json;\nconst phone = (d.phone || d.billing_address?.phone || '').replace(/\\D/g, '');\nconst intlPhone = phone.startsWith('54') ? phone : '54' + phone.replace(/^0/, '');\nconst nombre = d.billing_address?.first_name || 'Cliente';\nconst productos = (d.line_items || []).map(i => `• ${i.quantity}x ${i.name}`).join('\\n');\nconst total = parseFloat(d.total_price || 0).toLocaleString('es-AR');\nconst orden = d.order_number;\nreturn [{ json: { phone: intlPhone, nombre, productos, total, orden } }];"
+      },
+      "id": "format-data",
+      "name": "Formatear datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 220]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.phone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"¡Hola {{ $json.nombre }}! 👋\\n\\n✅ *Tu pedido #{{ $json.orden }} fue confirmado en Yani Trend.*\\n\\n📦 Productos:\\n{{ $json.productos }}\\n\\n💰 Total: ARS ${{ $json.total }}\\n\\n🚚 En 24hs hábiles te enviamos el seguimiento. *Pagás en efectivo cuando llegue a tu puerta* — sin adelantar nada.\\n\\nCualquier duda respondenos por acá 😊\"\n  }\n}"
+      },
+      "id": "whatsapp-send",
+      "name": "Enviar WhatsApp al cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 220]
+    }
+  ],
+  "connections": {
+    "Shopify — Orden Nueva": { "main": [[{ "node": "¿Tiene teléfono?", "type": "main", "index": 0 }]] },
+    "¿Tiene teléfono?": { "main": [[{ "node": "Formatear datos", "type": "main", "index": 0 }], []] },
+    "Formatear datos": { "main": [[{ "node": "Enviar WhatsApp al cliente", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "whatsapp", "ordenes"]
+}

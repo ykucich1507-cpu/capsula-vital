@@ -1,0 +1,67 @@
+{
+  "name": "YaniTrend — Meta Ads Reporte Diario",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "triggerAtHour": 8, "triggerAtMinute": 0 }] } },
+      "id": "schedule",
+      "name": "Todos los días a las 8AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://graph.facebook.com/v19.0/act_1309758261308011/campaigns",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN }}" }] },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "id,name,status,insights{spend,impressions,reach,clicks,cpm,cpc,purchase_roas,actions}" },
+            { "name": "date_preset", "value": "yesterday" },
+            { "name": "limit", "value": "20" }
+          ]
+        }
+      },
+      "id": "get-campaigns",
+      "name": "Traer campañas de ayer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const campanas = $input.all().flatMap(i => i.json.data || []);\nconst fecha = new Date();\nfecha.setDate(fecha.getDate() - 1);\nconst fechaStr = fecha.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });\n\nlet totalGasto = 0, totalCompras = 0;\nconst filas = campanas.map(c => {\n  const ins = c.insights?.data?.[0];\n  const gasto = parseFloat(ins?.spend || 0);\n  const compras = ins?.actions?.find(a => a.action_type === 'purchase')?.value || 0;\n  const roas = parseFloat(ins?.purchase_roas?.[0]?.value || 0);\n  const cpc = parseFloat(ins?.cpc || 0);\n  const cpm = parseFloat(ins?.cpm || 0);\n  totalGasto += gasto;\n  totalCompras += parseInt(compras);\n  const roasColor = roas >= 2 ? '#108043' : roas >= 1.2 ? '#E65100' : '#C62828';\n  const statusIcon = c.status === 'ACTIVE' ? '🟢' : '⏸️';\n  return `<tr>\n    <td style='padding:6px 10px;font-size:13px'>${statusIcon} ${c.name.slice(0, 40)}</td>\n    <td style='padding:6px 10px;text-align:center'>$${gasto.toFixed(0)}</td>\n    <td style='padding:6px 10px;text-align:center'>${compras}</td>\n    <td style='padding:6px 10px;text-align:center;color:${roasColor};font-weight:700'>${roas > 0 ? roas.toFixed(2) + 'x' : '—'}</td>\n    <td style='padding:6px 10px;text-align:center'>$${cpc.toFixed(2)}</td>\n    <td style='padding:6px 10px;text-align:center'>$${cpm.toFixed(1)}</td>\n  </tr>`;\n}).join('');\nreturn [{ json: { fechaStr, filas, totalGasto: totalGasto.toFixed(2), totalCompras } }];"
+      },
+      "id": "code",
+      "name": "Calcular resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "ykucich1507@gmail.com",
+        "subject": "=💰 Meta Ads Yani Trend — {{ $json.fechaStr }} — USD ${{ $json.totalGasto }}",
+        "emailType": "html",
+        "message": "=<div style='font-family:sans-serif;max-width:680px'>\n<h2>💰 Reporte Meta Ads — {{ $json.fechaStr }}</h2>\n<table style='width:100%;border-collapse:collapse;margin-bottom:24px'>\n  <tr>\n    <td style='background:#EEF0FC;padding:16px;border-radius:10px;text-align:center'>\n      <div style='font-size:28px;font-weight:700;color:#5C6AC4'>USD ${{ $json.totalGasto }}</div>\n      <div style='font-size:12px;color:#666'>Gasto total</div>\n    </td>\n    <td style='width:10px'></td>\n    <td style='background:#E3F1EC;padding:16px;border-radius:10px;text-align:center'>\n      <div style='font-size:28px;font-weight:700;color:#108043'>{{ $json.totalCompras }}</div>\n      <div style='font-size:12px;color:#666'>Compras totales</div>\n    </td>\n  </tr>\n</table>\n<h3>Detalle por campaña</h3>\n<table style='width:100%;border-collapse:collapse;font-size:13px'>\n  <thead><tr style='background:#5C6AC4;color:white'>\n    <th style='padding:8px 10px;text-align:left'>Campaña</th>\n    <th style='padding:8px 10px'>Gasto</th>\n    <th style='padding:8px 10px'>Compras</th>\n    <th style='padding:8px 10px'>ROAS</th>\n    <th style='padding:8px 10px'>CPC</th>\n    <th style='padding:8px 10px'>CPM</th>\n  </tr></thead>\n  <tbody>{{ $json.filas }}</tbody>\n</table>\n<p style='font-size:12px;color:#999;margin-top:16px'>🟢 Activa · ⏸️ Pausada · ROAS: 🟢 ≥2x · 🟡 ≥1.2x · 🔴 &lt;1.2x</p>\n<p style='margin-top:16px'><a href='https://business.facebook.com/adsmanager' style='background:#1877F2;color:white;padding:10px 20px;border-radius:8px;text-decoration:none'>Ads Manager →</a></p>\n</div>",
+        "options": {}
+      },
+      "id": "email-send",
+      "name": "Enviar reporte",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [920, 300],
+      "credentials": { "gmailOAuth2": { "id": "gmail-yanitrend", "name": "Gmail YaniTrend" } }
+    }
+  ],
+  "connections": {
+    "Todos los días a las 8AM": { "main": [[{ "node": "Traer campañas de ayer", "type": "main", "index": 0 }]] },
+    "Traer campañas de ayer": { "main": [[{ "node": "Calcular resumen", "type": "main", "index": 0 }]] },
+    "Calcular resumen": { "main": [[{ "node": "Enviar reporte", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["yanitrend", "meta-ads", "reportes"]
+}
