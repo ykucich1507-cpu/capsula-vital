@@ -1,0 +1,272 @@
+{
+  "name": "Carritos Abandonados — Yani Trend",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify-cart-abandoned",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ca-0001",
+      "name": "Webhook — Carrito Abandonado Shopify",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "notes": "Configurar en Shopify: Settings → Notifications → Abandoned checkout webhook → esta URL"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "ca-0002",
+      "name": "Responder OK a Shopify",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [460, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body;\n\nconst email = body?.email || '';\nconst phone = (body?.phone || body?.billing_address?.phone || body?.shipping_address?.phone || '').replace(/\\D/g, '');\nconst firstName = body?.customer?.first_name || body?.billing_address?.first_name || 'cliente';\nconst checkoutUrl = body?.abandoned_checkout_url || '';\nconst totalPrice = body?.total_price || '0';\n\n// Extraer primer producto del carrito\nconst lineItems = body?.line_items || [];\nconst producto = lineItems[0]?.title || 'tu producto';\nconst cantidad = lineItems[0]?.quantity || 1;\n\n// Solo procesar si hay email o teléfono\nconst tieneContacto = email || phone;\n\nreturn {\n  email,\n  phone,\n  firstName,\n  checkoutUrl,\n  totalPrice,\n  producto,\n  cantidad,\n  tieneContacto: !!tieneContacto,\n  lineItems\n};"
+      },
+      "id": "ca-0003",
+      "name": "Extraer Datos del Carrito",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "cond-contacto",
+              "leftValue": "={{ $json.tieneContacto }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true" }
+            }
+          ]
+        }
+      },
+      "id": "ca-0004",
+      "name": "¿Tiene email o teléfono?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "hours"
+      },
+      "id": "ca-0005",
+      "name": "Esperar 1 hora",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [900, 240],
+      "notes": "Esperar 1h antes del primer recordatorio — da tiempo a que completen la compra solos"
+    },
+    {
+      "parameters": {
+        "fromEmail": "Yani Trend <onboarding@resend.dev>",
+        "toEmail": "={{ $('Extraer Datos del Carrito').item.json.email }}",
+        "subject": "=😮 {{ $('Extraer Datos del Carrito').item.json.firstName }}, olvidaste algo en tu carrito",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:0 auto\">\n  <div style=\"background:linear-gradient(135deg,#E6007E,#c0005f);color:#fff;padding:28px;border-radius:12px 12px 0 0;text-align:center\">\n    <p style=\"margin:0;font-size:28px\">🛒</p>\n    <h2 style=\"margin:8px 0 0\">¡Te olvidaste algo!</h2>\n  </div>\n  <div style=\"background:#fff;padding:28px;border-radius:0 0 12px 12px;border:1px solid #eee\">\n    <p style=\"font-size:16px\">Hola <strong>{{ $('Extraer Datos del Carrito').item.json.firstName }}</strong> 👋</p>\n    <p style=\"color:#555\">Dejaste <strong>{{ $('Extraer Datos del Carrito').item.json.producto }}</strong> en tu carrito. ¡No dejes que se agote!</p>\n    <div style=\"background:#F3E9DF;border-radius:12px;padding:16px;margin:20px 0;text-align:center\">\n      <p style=\"margin:0;font-size:13px;color:#888\">Tu carrito</p>\n      <p style=\"margin:4px 0;font-weight:700;font-size:16px\">{{ $('Extraer Datos del Carrito').item.json.producto }}</p>\n      <p style=\"margin:0;color:#E6007E;font-size:22px;font-weight:800\">${{ $('Extraer Datos del Carrito').item.json.totalPrice }}</p>\n      <p style=\"margin:4px 0;font-size:12px;color:#888\">💵 Pagás cuando lo recibís</p>\n    </div>\n    <div style=\"text-align:center;margin:24px 0\">\n      <a href=\"{{ $('Extraer Datos del Carrito').item.json.checkoutUrl }}\" style=\"background:linear-gradient(135deg,#E6007E,#c0005f);color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block\">✅ Completar mi pedido</a>\n    </div>\n    <p style=\"text-align:center;color:#888;font-size:13px\">¿Tenés dudas? Escribinos por WhatsApp 👇</p>\n    <div style=\"text-align:center\">\n      <a href=\"https://wa.me/5492995055178?text=Hola!%20Tengo%20dudas%20sobre%20mi%20pedido%20de%20{{ $('Extraer Datos del Carrito').item.json.producto | urlencode }}\" style=\"background:#25D366;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block\">\n        📲 WhatsApp\n      </a>\n    </div>\n    <p style=\"color:#ccc;font-size:11px;text-align:center;margin-top:24px\">Yani Trend · yanitrend.com · Si no querés recibir más emails respondé con BAJA</p>\n  </div>\n</div>",
+        "options": {}
+      },
+      "id": "ca-0006",
+      "name": "Email 1 — Recordatorio 1h",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1120, 180],
+      "credentials": {
+        "smtp": {
+          "id": "resend-smtp",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "cond-phone",
+              "leftValue": "={{ $('Extraer Datos del Carrito').item.json.phone }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ]
+        }
+      },
+      "id": "ca-0007",
+      "name": "¿Tiene teléfono?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 360]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{ $vars.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Extraer Datos del Carrito').item.json.phone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"Hola {{ $('Extraer Datos del Carrito').item.json.firstName }}! 👋\\n\\nVimos que dejaste *{{ $('Extraer Datos del Carrito').item.json.producto }}* en tu carrito de Yani Trend 🛒\\n\\n¿Necesitás ayuda para completar el pedido? Te lo coordino en un minuto 😊\\n\\n💵 Pagás cuando lo recibís — sin riesgo\\n🚚 Envío a todo el país\\n\\n¿Lo hacemos?\"\n  }\n}",
+        "options": {}
+      },
+      "id": "ca-0008",
+      "name": "WhatsApp — Recordatorio Carrito 1h",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "whatsapp-auth",
+          "name": "WhatsApp Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 23,
+        "unit": "hours"
+      },
+      "id": "ca-0009",
+      "name": "Esperar 23hs más (total 24hs)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1560, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Yani Trend <onboarding@resend.dev>",
+        "toEmail": "={{ $('Extraer Datos del Carrito').item.json.email }}",
+        "subject": "=⏰ Última oportunidad — tu carrito caduca hoy",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:0 auto\">\n  <div style=\"background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:28px;border-radius:12px 12px 0 0;text-align:center\">\n    <p style=\"margin:0;font-size:28px\">⏰</p>\n    <h2 style=\"margin:8px 0 0\">¡Última oportunidad!</h2>\n    <p style=\"margin:8px 0 0;opacity:0.9;font-size:14px\">Tu carrito caduca en pocas horas</p>\n  </div>\n  <div style=\"background:#fff;padding:28px;border-radius:0 0 12px 12px;border:1px solid #eee\">\n    <p style=\"font-size:15px\">Hola <strong>{{ $('Extraer Datos del Carrito').item.json.firstName }}</strong>,</p>\n    <p style=\"color:#555\">Tu <strong>{{ $('Extraer Datos del Carrito').item.json.producto }}</strong> está esperando. El precio especial y el stock son limitados 🔥</p>\n    <div style=\"background:#fff3cd;border:2px solid #f59e0b;border-radius:12px;padding:16px;margin:20px 0;text-align:center\">\n      <p style=\"margin:0;font-size:13px;color:#92400e;font-weight:600\">⚠️ Solo quedan pocas unidades</p>\n      <p style=\"margin:8px 0 0;font-weight:700;font-size:18px\">{{ $('Extraer Datos del Carrito').item.json.producto }}</p>\n      <p style=\"margin:4px 0;color:#E6007E;font-size:24px;font-weight:800\">${{ $('Extraer Datos del Carrito').item.json.totalPrice }}</p>\n    </div>\n    <div style=\"text-align:center;margin:24px 0\">\n      <a href=\"{{ $('Extraer Datos del Carrito').item.json.checkoutUrl }}\" style=\"background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block\">🛒 Recuperar mi carrito ahora</a>\n    </div>\n    <div style=\"text-align:center\">\n      <a href=\"https://wa.me/5492995055178\" style=\"background:#25D366;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block\">📲 Hablar con alguien</a>\n    </div>\n    <p style=\"color:#ccc;font-size:11px;text-align:center;margin-top:24px\">Yani Trend · yanitrend.com</p>\n  </div>\n</div>",
+        "options": {}
+      },
+      "id": "ca-0010",
+      "name": "Email 2 — Urgencia 24hs",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1780, 120],
+      "credentials": {
+        "smtp": {
+          "id": "resend-smtp",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{ $vars.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Extraer Datos del Carrito').item.json.phone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"⏰ Hola {{ $('Extraer Datos del Carrito').item.json.firstName }}!\\n\\nTu carrito con *{{ $('Extraer Datos del Carrito').item.json.producto }}* está por caducar 😬\\n\\nSon las últimas unidades al precio especial. Completá tu pedido antes de que se agote:\\n👉 {{ $('Extraer Datos del Carrito').item.json.checkoutUrl }}\\n\\nO escribime acá y te lo proceso yo en 2 minutos 😊\"\n  }\n}",
+        "options": {}
+      },
+      "id": "ca-0011",
+      "name": "WhatsApp — Urgencia 24hs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 280],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "whatsapp-auth",
+          "name": "WhatsApp Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "Yani Trend <onboarding@resend.dev>",
+        "toEmail": "ykucich1507@gmail.com",
+        "subject": "=🛒 Carrito abandonado: {{ $('Extraer Datos del Carrito').item.json.firstName }} — ${{ $('Extraer Datos del Carrito').item.json.totalPrice }}",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:500px;margin:0 auto\">\n  <div style=\"background:#1a1a1a;color:#fff;padding:20px;border-radius:12px 12px 0 0;text-align:center\">\n    <h3 style=\"margin:0\">🛒 Carrito Abandonado</h3>\n  </div>\n  <div style=\"background:#fff;padding:20px;border-radius:0 0 12px 12px;border:1px solid #eee\">\n    <p><strong>Cliente:</strong> {{ $('Extraer Datos del Carrito').item.json.firstName }}</p>\n    <p><strong>Email:</strong> {{ $('Extraer Datos del Carrito').item.json.email }}</p>\n    <p><strong>Teléfono:</strong> {{ $('Extraer Datos del Carrito').item.json.phone }}</p>\n    <p><strong>Producto:</strong> {{ $('Extraer Datos del Carrito').item.json.producto }}</p>\n    <p><strong>Total:</strong> ${{ $('Extraer Datos del Carrito').item.json.totalPrice }}</p>\n    <p><strong>Link checkout:</strong> <a href=\"{{ $('Extraer Datos del Carrito').item.json.checkoutUrl }}\">Ver carrito</a></p>\n    <p style=\"color:#888;font-size:12px\">Ya se enviaron recordatorios automáticos por email y WhatsApp.</p>\n  </div>\n</div>",
+        "options": {}
+      },
+      "id": "ca-0012",
+      "name": "Email — Alerta Interna Carrito Abandonado",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [900, 420],
+      "credentials": {
+        "smtp": {
+          "id": "resend-smtp",
+          "name": "Resend SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Carrito Abandonado Shopify": {
+      "main": [
+        [
+          { "node": "Responder OK a Shopify", "type": "main", "index": 0 },
+          { "node": "Extraer Datos del Carrito", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extraer Datos del Carrito": {
+      "main": [[{ "node": "¿Tiene email o teléfono?", "type": "main", "index": 0 }]]
+    },
+    "¿Tiene email o teléfono?": {
+      "main": [
+        [
+          { "node": "Esperar 1 hora", "type": "main", "index": 0 },
+          { "node": "Email — Alerta Interna Carrito Abandonado", "type": "main", "index": 0 }
+        ],
+        []
+      ]
+    },
+    "Esperar 1 hora": {
+      "main": [
+        [
+          { "node": "Email 1 — Recordatorio 1h", "type": "main", "index": 0 },
+          { "node": "¿Tiene teléfono?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "¿Tiene teléfono?": {
+      "main": [
+        [{ "node": "WhatsApp — Recordatorio Carrito 1h", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "WhatsApp — Recordatorio Carrito 1h": {
+      "main": [[{ "node": "Esperar 23hs más (total 24hs)", "type": "main", "index": 0 }]]
+    },
+    "Email 1 — Recordatorio 1h": {
+      "main": [[{ "node": "Esperar 23hs más (total 24hs)", "type": "main", "index": 0 }]]
+    },
+    "Esperar 23hs más (total 24hs)": {
+      "main": [
+        [
+          { "node": "Email 2 — Urgencia 24hs", "type": "main", "index": 0 },
+          { "node": "WhatsApp — Urgencia 24hs", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "tags": [
+    { "name": "yanitrend" },
+    { "name": "shopify" },
+    { "name": "carritos-abandonados" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "n8nVersion": "1.0.0"
+  }
+}
