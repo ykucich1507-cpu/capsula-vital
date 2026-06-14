@@ -1,0 +1,341 @@
+{
+  "name": "Instagram DM Automático — Yani Trend",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "instagram-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ig-0001",
+      "name": "Webhook — Verificación Meta",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 200],
+      "notes": "Meta verifica el webhook con GET al configurarlo. Responde con hub.challenge."
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "ig-0002",
+      "name": "Responder Challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [460, 200]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instagram-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ig-0003",
+      "name": "Webhook — DM / Comentario entrante",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "ig-0004",
+      "name": "Responder OK a Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [460, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraer datos del mensaje de Instagram\nconst body = $input.item.json.body;\n\n// Soporte para DM (messaging) y comentarios\nconst entry = body?.entry?.[0];\nconst messaging = entry?.messaging?.[0];\nconst change = entry?.changes?.[0];\n\nlet senderId = '';\nlet messageText = '';\nlet messageType = '';\nlet commentId = '';\n\nif (messaging) {\n  // DM directo\n  senderId = messaging.sender?.id || '';\n  messageText = messaging.message?.text || '';\n  messageType = 'dm';\n} else if (change?.field === 'comments') {\n  // Comentario en post\n  senderId = change.value?.from?.id || '';\n  messageText = change.value?.text || '';\n  commentId = change.value?.id || '';\n  messageType = 'comment';\n}\n\n// Detectar intención\nconst text = messageText.toLowerCase();\nconst esPrecio = /precio|cuanto|cuesta|vale|costo/.test(text);\nconst esCompra = /comprar|quiero|pedir|llevar|pedido/.test(text);\nconst esEnvio = /envio|enví|llega|demora|días|cuanto tarda/.test(text);\nconst esSaludo = /hola|buenas|buenos|buen dia|hi|info/.test(text);\nconst esTermo = /termo|vaso|térm|sensor|temperatura/.test(text);\nconst esParlante = /parlante|bluetooth|clip|música/.test(text);\n\nlet intent = 'otro';\nif (esPrecio) intent = 'precio';\nelse if (esCompra) intent = 'compra';\nelse if (esEnvio) intent = 'envio';\nelse if (esTermo) intent = 'producto_termo';\nelse if (esParlante) intent = 'producto_parlante';\nelse if (esSaludo) intent = 'saludo';\n\nreturn {\n  senderId,\n  messageText,\n  messageType,\n  commentId,\n  intent,\n  rawBody: body\n};"
+      },
+      "id": "ig-0005",
+      "name": "Parsear Mensaje y Detectar Intención",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{ $json.senderId }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ]
+        }
+      },
+      "id": "ig-0006",
+      "name": "¿Tiene sender válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false },
+          "conditions": [
+            {
+              "id": "cond-intent",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "otro",
+              "operator": { "type": "string", "operation": "notEquals" }
+            }
+          ]
+        }
+      },
+      "id": "ig-0007",
+      "name": "¿Intención reconocida?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generar respuesta según intención\nconst intent = $input.item.json.intent;\nconst WA_LINK = 'https://wa.me/5492995055178?text=Hola!%20Vi%20tu%20Instagram%20y%20quiero%20saber%20m%C3%A1s%20sobre%20los%20productos';\n\nconst respuestas = {\n  saludo: `¡Hola! 👋 Bienvenida a Yani Trend 💕\\n\\nTenemos ofertas especiales HOY con pago contra entrega:\\n\\n🌡️ Vaso Térmico con Sensor → $29.900\\n🫙 Termo con Sensor 500ml → $35.900\\n🎵 Parlante Clip 5 Bluetooth → $23.900\\n\\n✅ Envío a todo el país\\n💵 Pagás cuando lo recibís\\n\\n¿Cuál te interesa? 👇`,\n\n  precio: `🔥 Precios especiales de hoy:\\n\\n🌡️ Vaso Térmico con Sensor 400ml → *$29.900* (antes $45.000)\\n🫙 Termo con Sensor 500ml → *$35.900* (antes $52.000)\\n🎵 Parlante Clip 5 Bluetooth → *$23.900* (antes $36.000)\\n\\n💵 Pagás todo al recibir el paquete — sin adelantar nada 🇦🇷\\n\\nPara hacer tu pedido escribinos por WhatsApp 👇`,\n\n  compra: `¡Genial que quieras comprar! 🎉\\n\\nPara hacer tu pedido con envío a tu domicilio escribinos por WhatsApp y te lo coordinamos rápido 📦\\n\\n✅ Pagás cuando lo recibís\\n🚚 3 a 7 días hábiles\\n💵 Sin adelantar nada\\n\\nTe esperamos! 👇`,\n\n  envio: `🚚 El envío llega en *3 a 7 días hábiles* a todo el país.\\n\\n*Pagás todo al recibir* el paquete — no adelantás nada 💵\\n\\nSi no llega o no te convence, no pagás. ¡Riesgo cero! 😊\\n\\n¿Lo hacemos? Escribinos por WhatsApp 👇`,\n\n  producto_termo: `🌡️ *Vaso Térmico con Sensor de Temperatura*\\n\\n✨ Sensor LED que muestra la temperatura exacta\\n⏱️ Mantiene frío/caliente por 8 horas\\n💧 400ml — perfecto para mate, café o agua\\n🛡️ Acero inoxidable 304 sin BPA\\n\\n💰 Precio especial: *$29.900* (antes $45.000)\\n✅ Envío gratis · Pagás al recibir\\n\\nPara pedirlo escribinos por WhatsApp 👇`,\n\n  producto_parlante: `🎵 *Parlante Clip 5 Bluetooth*\\n\\n🔊 Sonido nítido y potente\\n💧 Resistente al agua\\n🔋 12 horas de batería\\n📎 Clip multiusos — lo enganchás donde quieras\\n\\n💰 Precio especial: *$23.900* (antes $36.000)\\n✅ Envío gratis · Pagás al recibir\\n\\nPara pedirlo escribinos por WhatsApp 👇`\n};\n\nconst mensaje = (respuestas[intent] || respuestas.saludo) + `\\n\\n👉 ${WA_LINK}`;\n\nreturn {\n  ...$input.item.json,\n  respuesta: mensaje,\n  waLink: WA_LINK\n};"
+      },
+      "id": "ig-0008",
+      "name": "Generar Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "cond-type",
+              "leftValue": "={{ $json.messageType }}",
+              "rightValue": "dm",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "ig-0009",
+      "name": "¿DM o Comentario?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 340]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v17.0/me/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recipient\": { \"id\": \"{{ $json.senderId }}\" },\n  \"message\": { \"text\": {{ JSON.stringify($json.respuesta) }} }\n}",
+        "options": {}
+      },
+      "id": "ig-0010",
+      "name": "Instagram — Responder DM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 260],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "instagram-auth",
+          "name": "Instagram / Meta Page Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v17.0/{{ $json.commentId }}/replies",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "message", "value": "={{ $json.respuesta }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ig-0011",
+      "name": "Instagram — Responder Comentario",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 420],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "instagram-auth",
+          "name": "Instagram / Meta Page Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "id": "cond-compra",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "compra",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "ig-0012",
+      "name": "¿Intent = Compra?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 600]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.APP_URL }}/api/funnel/leads",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"Instagram User {{ $json.senderId }}\",\n  \"phone\": \"{{ $json.senderId }}\",\n  \"product\": \"Consulta Instagram\",\n  \"score\": 80,\n  \"source\": \"instagram-dm\"\n}",
+        "options": {}
+      },
+      "id": "ig-0013",
+      "name": "Guardar Lead desde Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 540]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Yani Trend <onboarding@resend.dev>",
+        "toEmail": "ykucich1507@gmail.com",
+        "subject": "📱 Lead caliente desde Instagram — intención de compra",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:500px;margin:0 auto\">\n  <div style=\"background:linear-gradient(135deg,#E1306C,#833AB4);color:#fff;padding:24px;border-radius:12px 12px 0 0;text-align:center\">\n    <h2 style=\"margin:0\">📱 Lead Caliente desde Instagram</h2>\n  </div>\n  <div style=\"background:#fff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #eee\">\n    <p><strong>Intención detectada:</strong> COMPRA 🔥</p>\n    <p><strong>Sender ID Instagram:</strong> {{ $json.senderId }}</p>\n    <p><strong>Mensaje original:</strong> \"{{ $json.messageText }}\"</p>\n    <p><strong>Tipo:</strong> {{ $json.messageType }}</p>\n    <br/>\n    <p style=\"color:#888;font-size:12px\">Ya se le respondió automáticamente con el link de WhatsApp. Podés hacer seguimiento manual si no escribe en las próximas horas.</p>\n  </div>\n</div>",
+        "options": {}
+      },
+      "id": "ig-0014",
+      "name": "Email — Alerta Lead Caliente Instagram",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1780, 660],
+      "credentials": {
+        "smtp": {
+          "id": "resend-smtp",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "hours"
+      },
+      "id": "ig-0015",
+      "name": "Esperar 2hs sin respuesta",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1780, 340]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v17.0/me/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recipient\": { \"id\": \"{{ $('Parsear Mensaje y Detectar Intención').item.json.senderId }}\" },\n  \"message\": { \"text\": \"¿Llegaste a ver el precio? 😊 Hoy es el último día con este descuento especial 🔥\\n\\nSi querés hacer tu pedido te esperamos por WhatsApp:\\n👉 https://wa.me/5492995055178\" }\n}",
+        "options": {}
+      },
+      "id": "ig-0016",
+      "name": "Instagram — Follow-up 2hs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 340],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "instagram-auth",
+          "name": "Instagram / Meta Page Token"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Verificación Meta": {
+      "main": [[{ "node": "Responder Challenge", "type": "main", "index": 0 }]]
+    },
+    "Webhook — DM / Comentario entrante": {
+      "main": [
+        [
+          { "node": "Responder OK a Meta", "type": "main", "index": 0 },
+          { "node": "Parsear Mensaje y Detectar Intención", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Parsear Mensaje y Detectar Intención": {
+      "main": [[{ "node": "¿Tiene sender válido?", "type": "main", "index": 0 }]]
+    },
+    "¿Tiene sender válido?": {
+      "main": [
+        [{ "node": "¿Intención reconocida?", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "¿Intención reconocida?": {
+      "main": [
+        [{ "node": "Generar Respuesta", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Generar Respuesta": {
+      "main": [
+        [
+          { "node": "¿DM o Comentario?", "type": "main", "index": 0 },
+          { "node": "¿Intent = Compra?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "¿DM o Comentario?": {
+      "main": [
+        [
+          { "node": "Instagram — Responder DM", "type": "main", "index": 0 },
+          { "node": "Esperar 2hs sin respuesta", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Instagram — Responder Comentario", "type": "main", "index": 0 }]
+      ]
+    },
+    "Esperar 2hs sin respuesta": {
+      "main": [[{ "node": "Instagram — Follow-up 2hs", "type": "main", "index": 0 }]]
+    },
+    "¿Intent = Compra?": {
+      "main": [
+        [
+          { "node": "Guardar Lead desde Instagram", "type": "main", "index": 0 },
+          { "node": "Email — Alerta Lead Caliente Instagram", "type": "main", "index": 0 }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "staticData": null,
+  "tags": [
+    { "name": "yanitrend" },
+    { "name": "instagram" },
+    { "name": "dm-automatico" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "n8nVersion": "1.0.0"
+  }
+}
