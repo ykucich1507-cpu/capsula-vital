@@ -1,0 +1,332 @@
+{
+  "name": "Embudo Yani Trend — Flujo Completo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "yanitrend-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0001-0001-0001-000000000001",
+      "name": "Webhook — Nuevo Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0002-0002-0002-000000000002",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [460, 180]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Yani Trend <onboarding@resend.dev>",
+        "toEmail": "ykucich1507@gmail.com",
+        "subject": "=🔥 Nuevo lead: {{ $json.body.name }} — {{ $json.body.product }}",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:500px;margin:0 auto\">\n  <div style=\"background:linear-gradient(135deg,#E6007E,#c0005f);color:#fff;padding:24px;border-radius:12px 12px 0 0;text-align:center\">\n    <h2 style=\"margin:0\">🔥 Nuevo Lead Capturado</h2>\n  </div>\n  <div style=\"background:#fff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #eee\">\n    <table style=\"width:100%;border-collapse:collapse\">\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Nombre</td><td style=\"padding:8px 0;font-weight:600\">{{ $json.body.name }}</td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">WhatsApp</td><td style=\"padding:8px 0;font-weight:600\"><a href=\"https://wa.me/{{ $json.body.phone }}\">+{{ $json.body.phone }}</a></td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Producto</td><td style=\"padding:8px 0;font-weight:600\">{{ $json.body.product }}</td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Score</td><td style=\"padding:8px 0;font-weight:600;color:#E6007E\">{{ $json.body.score }}/100</td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Fuente</td><td style=\"padding:8px 0;font-weight:600\">{{ $json.body.source }}</td></tr>\n    </table>\n    <div style=\"margin-top:20px;text-align:center\">\n      <a href=\"https://wa.me/{{ $json.body.phone }}\" style=\"background:#25D366;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block\">📲 Contactar por WhatsApp</a>\n    </div>\n  </div>\n</div>",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0003-0003-0003-000000000003",
+      "name": "Email — Notificar Nuevo Lead",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [460, 300],
+      "credentials": {
+        "smtp": {
+          "id": "resend-smtp",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{ $vars.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.body.phone }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "={ \"body\": \"Hola {{ $json.body.name }}! 👋\\n\\nTe habla Yani Trend. Vimos que te interesó el {{ $json.body.product }} 🌡️\\n\\nTe lo reservamos con precio especial de hoy: *$29.900* con envío a todo el país 🇦🇷\\n\\nPagás cuando lo recibís — no adelantás nada 💵\\n\\n¿Lo hacemos? Respondé SÍ y te coordino el envío 🚀\" }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0004-0004-0004-000000000004",
+      "name": "WhatsApp — Mensaje Bienvenida",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 420],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "whatsapp-auth",
+          "name": "WhatsApp Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 24,
+        "unit": "hours"
+      },
+      "id": "1a2b3c4d-0005-0005-0005-000000000005",
+      "name": "Esperar 24hs",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [680, 420]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{ $vars.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Webhook — Nuevo Lead').item.json.body.phone }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "={ \"body\": \"Hola {{ $('Webhook — Nuevo Lead').item.json.body.name }}! 😊\\n\\nTe escribimos de Yani Trend. ¿Pudiste ver el {{ $('Webhook — Nuevo Lead').item.json.body.product }}?\\n\\nSigue disponible al precio especial de hoy 🔥\\nEnvío gratis · Pagás al recibir · 3-7 días hábiles\\n\\nSi tenés alguna duda te ayudamos 💕\" }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0006-0006-0006-000000000006",
+      "name": "WhatsApp — Recordatorio 24hs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 420],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "whatsapp-auth",
+          "name": "WhatsApp Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify-order-paid",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0007-0007-0007-000000000007",
+      "name": "Webhook — Orden Pagada Shopify",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 620]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0008-0008-0008-000000000008",
+      "name": "Responder OK Shopify",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [460, 540]
+    },
+    {
+      "parameters": {
+        "fromEmail": "Yani Trend <onboarding@resend.dev>",
+        "toEmail": "ykucich1507@gmail.com",
+        "subject": "=✅ Venta confirmada: {{ $json.body.customer.first_name }} {{ $json.body.customer.last_name }} — ${{ $json.body.total_price }}",
+        "emailType": "html",
+        "message": "=<div style=\"font-family:Arial,sans-serif;max-width:500px;margin:0 auto\">\n  <div style=\"background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:24px;border-radius:12px 12px 0 0;text-align:center\">\n    <h2 style=\"margin:0\">✅ ¡Venta Confirmada!</h2>\n  </div>\n  <div style=\"background:#fff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #eee\">\n    <table style=\"width:100%;border-collapse:collapse\">\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Cliente</td><td style=\"padding:8px 0;font-weight:600\">{{ $json.body.customer.first_name }} {{ $json.body.customer.last_name }}</td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Email</td><td style=\"padding:8px 0;font-weight:600\">{{ $json.body.email }}</td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Teléfono</td><td style=\"padding:8px 0;font-weight:600\">{{ $json.body.phone }}</td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Total</td><td style=\"padding:8px 0;font-weight:600;color:#10b981\">${{ $json.body.total_price }} ARS</td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Dirección</td><td style=\"padding:8px 0;font-weight:600\">{{ $json.body.shipping_address.address1 }}, {{ $json.body.shipping_address.city }}</td></tr>\n      <tr><td style=\"padding:8px 0;color:#888;font-size:13px\">Orden #</td><td style=\"padding:8px 0;font-weight:600\">#{{ $json.body.order_number }}</td></tr>\n    </table>\n  </div>\n</div>",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0009-0009-0009-000000000009",
+      "name": "Email — Confirmar Venta",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [460, 660],
+      "credentials": {
+        "smtp": {
+          "id": "resend-smtp",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{ $vars.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.body.phone.replace(/\\D/g, '') }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "={ \"body\": \"✅ *¡Pedido confirmado, {{ $json.body.customer.first_name }}!*\\n\\n🚚 Tu pedido #{{ $json.body.order_number }} ya está en preparación.\\nLlega en 3 a 7 días hábiles.\\n\\n💵 Pagás al recibir — no adelantás nada.\\n\\nTe avisamos cuando salga con el número de seguimiento 📲\\n¡Gracias por elegirnos! 💕 — *Yani Trend*\" }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0010-0010-0010-000000000010",
+      "name": "WhatsApp — Confirmar al Cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 780],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "whatsapp-auth",
+          "name": "WhatsApp Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "days"
+      },
+      "id": "1a2b3c4d-0011-0011-0011-000000000011",
+      "name": "Esperar 3 días post-venta",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [680, 780]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{ $vars.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Webhook — Orden Pagada Shopify').item.json.body.phone.replace(/\\D/g, '') }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "text",
+              "value": "={ \"body\": \"Hola {{ $('Webhook — Orden Pagada Shopify').item.json.body.customer.first_name }}! 👋\\n\\n¿Cómo llegó tu pedido? Esperamos que lo estés disfrutando mucho 💕\\n\\nSi querés compartir tu experiencia, etiquetanos en Instagram 📸 ¡Nos encanta ver a nuestros clientes felices!\\n\\nY si querés repetir o regalar algo, tenemos precio especial para clientes que ya compraron 🎁\\n¿Te cuento las novedades?\" }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0012-0012-0012-000000000012",
+      "name": "WhatsApp — Post-venta 3 días",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 780],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "whatsapp-auth",
+          "name": "WhatsApp Bearer Token"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook — Nuevo Lead": {
+      "main": [
+        [
+          { "node": "Responder OK", "type": "main", "index": 0 },
+          { "node": "Email — Notificar Nuevo Lead", "type": "main", "index": 0 },
+          { "node": "WhatsApp — Mensaje Bienvenida", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "WhatsApp — Mensaje Bienvenida": {
+      "main": [
+        [{ "node": "Esperar 24hs", "type": "main", "index": 0 }]
+      ]
+    },
+    "Esperar 24hs": {
+      "main": [
+        [{ "node": "WhatsApp — Recordatorio 24hs", "type": "main", "index": 0 }]
+      ]
+    },
+    "Webhook — Orden Pagada Shopify": {
+      "main": [
+        [
+          { "node": "Responder OK Shopify", "type": "main", "index": 0 },
+          { "node": "Email — Confirmar Venta", "type": "main", "index": 0 },
+          { "node": "WhatsApp — Confirmar al Cliente", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "WhatsApp — Confirmar al Cliente": {
+      "main": [
+        [{ "node": "Esperar 3 días post-venta", "type": "main", "index": 0 }]
+      ]
+    },
+    "Esperar 3 días post-venta": {
+      "main": [
+        [{ "node": "WhatsApp — Post-venta 3 días", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "yanitrend" },
+    { "name": "embudo" },
+    { "name": "whatsapp" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "n8nVersion": "1.0.0"
+  }
+}
