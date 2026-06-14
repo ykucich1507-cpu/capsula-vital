@@ -11,7 +11,7 @@ const PRODUCT = {
   url: 'https://yanitrend.com/products/termo-con-sensor-de-temperatura',
 }
 
-const WHATSAPP_NUMBER = '5491100000000' // reemplazar con número real
+const WHATSAPP_NUMBER = '5492995055178'
 
 interface Message {
   role: 'bot' | 'user'
@@ -247,6 +247,22 @@ export default function FunnelPage() {
                 <span style={{ color: '#f59e0b', fontSize: 13 }}>{'★'.repeat(stars)}</span>
               </div>
               <p style={{ margin: 0, fontSize: 13, color: '#555' }}>"{text}"</p>
+            </div>
+          ))}
+        </div>
+
+        {/* FAQ */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: '20px', marginBottom: 16, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: 15, fontWeight: 700 }}>Preguntas frecuentes 💬</h3>
+          {[
+            { q: '¿Hacen envíos a todo el país?', a: 'Sí, enviamos a toda Argentina. El envío tarda 3 a 7 días hábiles según la provincia.' },
+            { q: '¿Cómo pago?', a: 'Pagás cuando el paquete llega a tu puerta. No adelantás nada.' },
+            { q: '¿Qué pasa si no me gusta?', a: 'Si el producto no cumple tus expectativas al recibirlo, simplemente no lo aceptás y no pagás nada.' },
+            { q: '¿Es seguro comprar?', a: 'Llevamos más de 1 año enviando a todo el país con cientos de clientes satisfechos. Pagás al recibir, así que el riesgo es cero.' },
+          ].map(({ q, a }, i) => (
+            <div key={i} style={{ borderBottom: i < 3 ? '1px solid #f0f0f0' : 'none', paddingBottom: 12, marginBottom: 12 }}>
+              <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 13 }}>❓ {q}</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#555' }}>{a}</p>
             </div>
           ))}
         </div>

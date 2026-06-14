@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { promises as fs } from 'fs'
+
+const LEADS_FILE = '/tmp/yanitrend-leads.json'
+
+async function updateLeadStatus(phone: string, status: 'vendido' | 'perdido') {
+  try {
+    const data = await fs.readFile(LEADS_FILE, 'utf-8')
+    const leads = JSON.parse(data)
+    const clean = (p: string) => p.replace(/\D/g, '').slice(-8)
+    const idx = leads.findIndex((l: { phone: string }) => clean(l.phone) === clean(phone))
+    if (idx !== -1) {
+      leads[idx].status = status
+      await fs.writeFile(LEADS_FILE, JSON.stringify(leads, null, 2))
+    }
+  } catch {}
+}
 
 function verifyShopifyWebhook(body: string, hmacHeader: string, secret: string): boolean {
   const hash = crypto
@@ -13,11 +29,21 @@ function handleOrderCreate(payload: unknown): void {
   console.log('[shopify/orders/create]', JSON.stringify(payload))
 }
 
-function handleOrderPaid(payload: unknown): void {
-  console.log('[shopify/orders/paid]', JSON.stringify(payload))
+async function handleOrderPaid(payload: unknown): Promise<void> {
+  const order = payload as { phone?: string; billing_address?: { phone?: string }; customer?: { phone?: string } }
+  const phone = order.phone || order.billing_address?.phone || order.customer?.phone || ''
+  if (phone) {
+    await updateLeadStatus(phone, 'vendido')
+    console.log('[shopify/orders/paid] lead marcado como vendido:', phone)
+  }
 }
 
-function handleOrderCancelled(payload: unknown): void {
+async function handleOrderCancelled(payload: unknown): Promise<void> {
+  const order = payload as { phone?: string; billing_address?: { phone?: string }; customer?: { phone?: string } }
+  const phone = order.phone || order.billing_address?.phone || order.customer?.phone || ''
+  if (phone) {
+    await updateLeadStatus(phone, 'perdido')
+  }
   console.log('[shopify/orders/cancelled]', JSON.stringify(payload))
 }
 
@@ -61,10 +87,10 @@ export async function POST(request: NextRequest) {
       handleOrderCreate(payload)
       break
     case 'orders/paid':
-      handleOrderPaid(payload)
+      await handleOrderPaid(payload)
       break
     case 'orders/cancelled':
-      handleOrderCancelled(payload)
+      await handleOrderCancelled(payload)
       break
     case 'products/update':
       handleProductUpdate(payload)

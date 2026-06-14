@@ -84,6 +84,13 @@ Respondé con todos los datos juntos y listo 🚀`,
 Te avisamos cuando salga con el número de seguimiento 📲
 ¡Gracias por elegirnos! 💕 — *Yani Trend*`,
 
+  postventa: (nombre: string) =>
+    `¡Hola ${nombre}! 👋 ¿Cómo llegó tu pedido? Esperamos que lo estés disfrutando 💕
+
+Si querés compartir tu experiencia, etiquetanos en Instagram 📸 ¡Nos encanta ver clientes felices!
+
+Para tu próxima compra tenemos precio especial 🎁 — ¿te cuento las novedades?`,
+
   noEntendi: `No entendí bien 😊 Podés preguntarme sobre:
 • *precio* — ver los precios
 • *envio* — cómo llega el pedido
@@ -220,6 +227,15 @@ async function handleMessage(from: string, text: string) {
     // Faltan datos
     await sendWhatsApp(from, `Gracias! Solo me falta completar algún dato. Mandame:\n\n${MSG.formulario(state.product || 'el producto')}`)
     sessions.set(from, state)
+    return
+  }
+
+  // Post-venta: si ya confirmó y vuelve a escribir
+  if (state.step === 'confirmado') {
+    const nombre = state.formData?.nombre || 'cliente'
+    state.step = 'eligiendo'
+    sessions.set(from, state)
+    await sendWhatsApp(from, MSG.postventa(nombre))
     return
   }
 
