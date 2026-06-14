@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía Operativa — Yani Trend</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Arial', sans-serif; color: #2B2B2B; background: #fff; }
+
+  @media print {
+    .no-print { display: none; }
+    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+
+  .cover {
+    background: linear-gradient(135deg, #E6007E, #c0005f);
+    color: white;
+    padding: 60px 40px;
+    text-align: center;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .cover h1 { font-size: 36px; font-weight: 900; margin-bottom: 12px; }
+  .cover h2 { font-size: 20px; font-weight: 400; opacity: 0.9; margin-bottom: 24px; }
+  .cover .fecha { font-size: 13px; opacity: 0.7; border: 1px solid rgba(255,255,255,0.4); padding: 6px 16px; border-radius: 20px; display: inline-block; }
+
+  .container { max-width: 800px; margin: 0 auto; padding: 40px 32px; }
+
+  h2.section { font-size: 22px; color: #E6007E; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #E6007E; }
+  h3.sub { font-size: 16px; color: #2B2B2B; margin: 20px 0 10px; font-weight: 700; }
+
+  .card { background: #F3E9DF; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
+  .card.green { background: #d1fae5; }
+  .card.blue { background: #dbeafe; }
+  .card.yellow { background: #fef3c7; }
+  .card.pink { background: #fce7f3; }
+
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 16px 0;
+  }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 12px 0;
+    border-left: 3px solid #E6007E;
+    padding-left: 16px;
+    margin-left: 20px;
+    position: relative;
+  }
+  .flow-step::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    background: #E6007E;
+    border-radius: 50%;
+    position: absolute;
+    left: -8px;
+    top: 16px;
+  }
+  .flow-step:last-child { border-left: 3px solid transparent; }
+  .flow-icon { font-size: 22px; flex-shrink: 0; }
+  .flow-text { flex: 1; }
+  .flow-text strong { font-size: 14px; display: block; margin-bottom: 2px; }
+  .flow-text span { font-size: 13px; color: #555; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th { background: #E6007E; color: white; padding: 10px 14px; text-align: left; font-size: 13px; }
+  td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
+  tr:nth-child(even) td { background: #fafafa; }
+
+  .badge { display: inline-block; background: #E6007E; color: white; border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 700; margin-right: 4px; }
+  .badge.green { background: #10b981; }
+  .badge.yellow { background: #f59e0b; }
+  .badge.gray { background: #6b7280; }
+
+  .tip { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 13px; }
+  .tip strong { color: #92400e; display: block; margin-bottom: 4px; }
+
+  .url-box { background: #1a1a1a; color: #4ade80; font-family: monospace; padding: 12px 16px; border-radius: 8px; font-size: 13px; margin: 8px 0; word-break: break-all; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .grid-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 16px; }
+  .grid-card h4 { font-size: 14px; margin-bottom: 8px; color: #E6007E; }
+  .grid-card p { font-size: 13px; color: #555; line-height: 1.5; }
+
+  .checklist { list-style: none; margin: 12px 0; }
+  .checklist li { padding: 8px 0; font-size: 14px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; }
+  .checklist li::before { content: '☐'; font-size: 18px; color: #E6007E; }
+
+  .footer { text-align: center; padding: 40px; color: #888; font-size: 12px; border-top: 1px solid #eee; margin-top: 40px; }
+
+  .print-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #E6007E;
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(230,0,126,0.4);
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div style="font-size:48px;margin-bottom:16px">🛍️</div>
+  <h1>YANI TREND</h1>
+  <h2>Guía Operativa del Sistema de Ventas</h2>
+  <span class="fecha">Junio 2026 — Versión 1.0</span>
+</div>
+
+<div class="container">
+
+  <!-- ÍNDICE -->
+  <h2 class="section">📋 Qué hay en esta guía</h2>
+  <div class="grid">
+    <div class="grid-card"><h4>1. El sistema completo</h4><p>Cómo funciona todo junto: ads, funnel, WhatsApp, email y seguimiento</p></div>
+    <div class="grid-card"><h4>2. Tu rutina diaria</h4><p>Qué revisar cada día en 10 minutos para no perder ninguna venta</p></div>
+    <div class="grid-card"><h4>3. Los flujos automáticos</h4><p>Qué hace el sistema solo, sin que vos toques nada</p></div>
+    <div class="grid-card"><h4>4. URLs y credenciales</h4><p>Todos los accesos importantes en un solo lugar</p></div>
+    <div class="grid-card"><h4>5. El dashboard de leads</h4><p>Cómo gestionar y cerrar ventas desde el panel</p></div>
+    <div class="grid-card"><h4>6. Solución de problemas</h4><p>Qué hacer si algo no funciona</p></div>
+  </div>
+
+  <!-- SECCIÓN 1: EL SISTEMA -->
+  <h2 class="section">1. Cómo funciona el sistema completo</h2>
+
+  <p style="margin-bottom:20px;font-size:14px;color:#555">Todo está automatizado. Una vez que un cliente ve tu anuncio, el sistema lo guía solo hasta la compra — vos solo intervenís cuando el cliente ya tiene intención real de comprar.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-icon">📱</div>
+      <div class="flow-text">
+        <strong>El cliente ve tu anuncio en Meta Ads o Instagram</strong>
+        <span>Campaña activa apuntando a Neuquén/Río Negro y resto del país</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon">🛍️</div>
+      <div class="flow-text">
+        <strong>Entra a la página de ofertas especiales</strong>
+        <span>yanitrend.com/pages/ofertas-especiales — ve los 3 productos, testimonios y FAQ</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon">🤖</div>
+      <div class="flow-text">
+        <strong>Chatea con el bot del funnel</strong>
+        <span>Deja nombre y teléfono — el sistema lo guarda como lead</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon">📧</div>
+      <div class="flow-text">
+        <strong>Vos recibís email de alerta inmediata</strong>
+        <span>Con nombre, teléfono y producto de interés</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon">💬</div>
+      <div class="flow-text">
+        <strong>El cliente recibe WhatsApp automático</strong>
+        <span>Mensaje de bienvenida con el producto y precio</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon">⏰</div>
+      <div class="flow-text">
+        <strong>Si no responde en 24hs → recordatorio automático</strong>
+        <span>Otro WhatsApp con urgencia de stock</span>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-icon">✅</div>
+      <div class="flow-text">
+        <strong>Venta confirmada → confirmación + post-venta</strong>
+        <span>WhatsApp de confirmación + seguimiento a los 3 días</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN 2: RUTINA DIARIA -->
+  <h2 class="section">2. Tu rutina diaria (10 minutos)</h2>
+
+  <div class="card green">
+    <h3 class="sub" style="margin-top:0">☀️ A la mañana (5 min)</h3>
+    <ul style="font-size:14px;padding-left:20px;line-height:2">
+      <li>Revisá los emails — ¿llegaron leads nuevos?</li>
+      <li>Respondé los WhatsApp de clientes interesados</li>
+      <li>Chequeá el dashboard: <strong>yanitrend.com/dashboard</strong></li>
+    </ul>
+  </div>
+
+  <div class="card blue">
+    <h3 class="sub" style="margin-top:0">🌙 A la noche (5 min)</h3>
+    <ul style="font-size:14px;padding-left:20px;line-height:2">
+      <li>Actualizá el estado de los leads en el dashboard (nuevo → contactado → vendido)</li>
+      <li>Revisá si hay carritos abandonados pendientes</li>
+      <li>Mirá las métricas de Meta Ads si hubo campaña activa</li>
+    </ul>
+  </div>
+
+  <div class="tip">
+    <strong>💡 Consejo</strong>
+    Los leads con score mayor a 70 son los más calientes — priorizalos para contacto manual.
+  </div>
+
+  <!-- SECCIÓN 3: FLUJOS AUTOMÁTICOS -->
+  <h2 class="section">3. Qué hace el sistema solo</h2>
+
+  <table>
+    <tr>
+      <th>Evento</th>
+      <th>Cuándo</th>
+      <th>Qué hace automático</th>
+    </tr>
+    <tr>
+      <td>🆕 Nuevo lead</td>
+      <td>Inmediato</td>
+      <td>Email a vos + WhatsApp al cliente</td>
+    </tr>
+    <tr>
+      <td>😴 Sin respuesta</td>
+      <td>24hs después</td>
+      <td>WhatsApp recordatorio al cliente</td>
+    </tr>
+    <tr>
+      <td>🛒 Carrito abandonado</td>
+      <td>1hs después</td>
+      <td>Email + WhatsApp recordatorio</td>
+    </tr>
+    <tr>
+      <td>🛒 Carrito abandonado</td>
+      <td>24hs después</td>
+      <td>Email urgencia + WhatsApp "última oportunidad"</td>
+    </tr>
+    <tr>
+      <td>✅ Venta confirmada</td>
+      <td>Inmediato</td>
+      <td>Email a vos + WhatsApp confirmación al cliente</td>
+    </tr>
+    <tr>
+      <td>📦 Post-venta</td>
+      <td>3 días después</td>
+      <td>WhatsApp preguntando cómo llegó + oferta segunda compra</td>
+    </tr>
+    <tr>
+      <td>📱 DM Instagram</td>
+      <td>Inmediato</td>
+      <td>Respuesta automática según intención + link WhatsApp</td>
+    </tr>
+    <tr>
+      <td>💬 DM sin respuesta</td>
+      <td>2hs después</td>
+      <td>Follow-up automático por Instagram</td>
+    </tr>
+  </table>
+
+  <!-- SECCIÓN 4: URLs Y ACCESOS -->
+  <h2 class="section">4. URLs y accesos importantes</h2>
+
+  <h3 class="sub">Tu tienda</h3>
+  <div class="url-box">https://yanitrend.com</div>
+  <div class="url-box">https://yanitrend.com/pages/ofertas-especiales</div>
+  <div class="url-box">https://yanitrend.com/dashboard</div>
+
+  <h3 class="sub">n8n — Automatizaciones</h3>
+  <div class="url-box">https://yanitrend.app.n8n.cloud</div>
+
+  <h3 class="sub">Webhooks de n8n (para configurar en Shopify y Meta)</h3>
+  <div class="url-box">https://yanitrend.app.n8n.cloud/webhook/yanitrend-lead</div>
+  <div class="url-box">https://yanitrend.app.n8n.cloud/webhook/shopify-order-paid</div>
+  <div class="url-box">https://yanitrend.app.n8n.cloud/webhook/shopify-abandoned-cart</div>
+  <div class="url-box">https://yanitrend.app.n8n.cloud/webhook/instagram-webhook</div>
+
+  <h3 class="sub">Plataformas</h3>
+  <table>
+    <tr><th>Plataforma</th><th>URL</th><th>Para qué</th></tr>
+    <tr><td>Shopify Admin</td><td>admin.shopify.com</td><td>Pedidos, productos, stock</td></tr>
+    <tr><td>Meta Ads</td><td>adsmanager.facebook.com</td><td>Campañas publicitarias</td></tr>
+    <tr><td>Meta Developers</td><td>developers.facebook.com</td><td>WhatsApp y webhooks</td></tr>
+    <tr><td>Resend</td><td>resend.com</td><td>Emails automáticos</td></tr>
+    <tr><td>Vercel</td><td>vercel.com</td><td>Hosting del bot</td></tr>
+  </table>
+
+  <!-- SECCIÓN 5: DASHBOARD -->
+  <h2 class="section">5. El dashboard de leads</h2>
+
+  <p style="font-size:14px;color:#555;margin-bottom:16px">Entrá a <strong>yanitrend.com/dashboard</strong> para ver y gestionar todos tus leads.</p>
+
+  <div class="grid">
+    <div class="grid-card">
+      <h4>🆕 Nuevo</h4>
+      <p>Lead recién capturado. Aún no lo contactaste manualmente. El sistema ya le mandó WhatsApp automático.</p>
+    </div>
+    <div class="grid-card">
+      <h4>📞 Contactado</h4>
+      <p>Ya hablaste con el cliente. Cambiá el estado cuando respondiste su WhatsApp.</p>
+    </div>
+    <div class="grid-card">
+      <h4>✅ Vendido</h4>
+      <p>Compra confirmada. Se actualiza automático cuando paga en Shopify. O podés marcarlo vos.</p>
+    </div>
+    <div class="grid-card">
+      <h4>❌ Perdido</h4>
+      <p>No se interesó o no respondió. Marcalo para limpiar el pipeline.</p>
+    </div>
+  </div>
+
+  <div class="tip">
+    <strong>💡 Cómo cerrar una venta desde el dashboard</strong>
+    Clic en el lead → panel derecho → botón "Contactar por WhatsApp" → se abre WhatsApp con el número del cliente directamente.
+  </div>
+
+  <!-- SECCIÓN 6: PROBLEMAS -->
+  <h2 class="section">6. Solución de problemas frecuentes</h2>
+
+  <table>
+    <tr><th>Problema</th><th>Causa probable</th><th>Solución</th></tr>
+    <tr>
+      <td>No llegan emails</td>
+      <td>Token de Resend vencido o sin créditos</td>
+      <td>Revisá resend.com → API Keys</td>
+    </tr>
+    <tr>
+      <td>WhatsApp no responde</td>
+      <td>Token de Meta vencido (dura 24hs)</td>
+      <td>Generá nuevo token en developers.facebook.com</td>
+    </tr>
+    <tr>
+      <td>n8n no ejecuta</td>
+      <td>Workflow en pausa o credencial vencida</td>
+      <td>Entrá a n8n → verificá que estén Published</td>
+    </tr>
+    <tr>
+      <td>Leads no aparecen en dashboard</td>
+      <td>Archivo /tmp se resetea en Vercel</td>
+      <td>Normal en Vercel — los leads se guardan hasta el próximo deploy</td>
+    </tr>
+    <tr>
+      <td>Instagram DM sin respuesta</td>
+      <td>Token de página vencido</td>
+      <td>Renovar Page Token en Meta for Developers</td>
+    </tr>
+  </table>
+
+  <!-- CHECKLIST SEMANAL -->
+  <h2 class="section">✅ Checklist semanal</h2>
+  <ul class="checklist">
+    <li>Revisé los leads nuevos de la semana en el dashboard</li>
+    <li>Contacté manualmente a los leads con score mayor a 70</li>
+    <li>Actualicé el estado de los leads (vendido / perdido)</li>
+    <li>Revisé el rendimiento de campañas en Meta Ads</li>
+    <li>Chequeé que los workflows de n8n estén Published</li>
+    <li>Renové el token de WhatsApp si tiene más de 20 días</li>
+    <li>Publiqué al menos 1 contenido en Instagram (@yani.trend)</li>
+    <li>Revisé el stock en Shopify y actualicé si es necesario</li>
+  </ul>
+
+  <!-- PRODUCTOS -->
+  <h2 class="section">📦 Productos y precios actuales</h2>
+  <table>
+    <tr><th>Producto</th><th>Precio venta</th><th>Precio tachado</th><th>Descuento</th></tr>
+    <tr><td>🌡️ Vaso Térmico con Sensor 400ml</td><td style="color:#E6007E;font-weight:700">$29.900</td><td style="color:#bbb;text-decoration:line-through">$45.000</td><td><span class="badge">-34%</span></td></tr>
+    <tr><td>🫙 Termo con Sensor 500ml</td><td style="color:#E6007E;font-weight:700">$35.900</td><td style="color:#bbb;text-decoration:line-through">$52.000</td><td><span class="badge">-31%</span></td></tr>
+    <tr><td>🎵 Parlante Clip 5 Bluetooth</td><td style="color:#E6007E;font-weight:700">$23.900</td><td style="color:#bbb;text-decoration:line-through">$36.000</td><td><span class="badge">-34%</span></td></tr>
+  </table>
+
+</div>
+
+<div class="footer">
+  <p><strong>Yani Trend</strong> · ykucich1507@gmail.com · yanitrend.com</p>
+  <p style="margin-top:4px">Guía generada en Junio 2026 — Actualizar cuando cambien precios o productos</p>
+</div>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ Guardar como PDF</button>
+
+</body>
+</html>
