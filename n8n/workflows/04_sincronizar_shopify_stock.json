@@ -1,0 +1,256 @@
+{
+  "name": "YaniTrend | 04 - Sincronizar Stock Shopify → Google Ads",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000001",
+      "name": "Cada 2 horas",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "resource": "product",
+        "limit": 250,
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000002",
+      "name": "Obtener productos Shopify",
+      "type": "n8n-nodes-base.shopify",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "shopifyApi": {
+          "name": "Shopify YaniTrend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Separar productos con stock = 0 y activos con stock\nconst sinStock = [];\nconst conStock = [];\n\nfor (const item of $input.all()) {\n  const product = item.json;\n  \n  // Calcular stock total del producto\n  let stockTotal = 0;\n  const variants = product.variants || [];\n  \n  for (const v of variants) {\n    if (v.inventory_management === 'shopify') {\n      stockTotal += (v.inventory_quantity || 0);\n    } else {\n      // Sin manejo de inventario = siempre disponible\n      stockTotal = 999;\n      break;\n    }\n  }\n  \n  const productoInfo = {\n    id: product.id,\n    titulo: product.title,\n    handle: product.handle,\n    status: product.status,\n    stock: stockTotal,\n    // Buscamos el nombre del producto en el título de la campaña de Google Ads\n    keywordBusqueda: product.title.split(' ').slice(0, 3).join(' ').toLowerCase()\n  };\n  \n  if (stockTotal <= 0 && product.status === 'active') {\n    sinStock.push({ json: { ...productoInfo, accion: 'PAUSAR_ADS' } });\n  } else if (stockTotal > 0) {\n    conStock.push({ json: { ...productoInfo, accion: 'ACTIVAR_ADS' } });\n  }\n}\n\n// Retornar todos los productos con su acción\nreturn [...sinStock, ...conStock];"
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000003",
+      "name": "Clasificar por stock",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://googleads.googleapis.com/v17/customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/googleAds:searchStream",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAdsOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "developer-token",
+              "value": "={{ $vars.GOOGLE_ADS_DEVELOPER_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"SELECT campaign.id, campaign.name, campaign.status FROM campaign WHERE campaign.name CONTAINS_ANY ('{{ $json.keywordBusqueda }}') ORDER BY campaign.name\"\n}",
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000004",
+      "name": "Buscar campaña relacionada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const campaignData = $input.first().json;\nconst productData = $('Clasificar por stock').first().json;\n\nconst rows = campaignData[0]?.results || [];\n\nif (rows.length === 0) {\n  return [{ json: { mensaje: `No se encontró campaña para: ${productData.titulo}`, accion: 'SIN_CAMPAÑA' } }];\n}\n\nconst accionesNecesarias = [];\n\nfor (const row of rows) {\n  const estadoActual = row.campaign.status;\n  const accionDeseada = productData.accion;\n  \n  // Solo actuar si el estado actual es diferente al deseado\n  if (accionDeseada === 'PAUSAR_ADS' && estadoActual === 'ENABLED') {\n    accionesNecesarias.push({\n      json: {\n        campaignId: row.campaign.id,\n        campaignName: row.campaign.name,\n        producto: productData.titulo,\n        stock: productData.stock,\n        estadoActual,\n        accion: 'PAUSAR',\n        nuevoEstado: 'PAUSED'\n      }\n    });\n  } else if (accionDeseada === 'ACTIVAR_ADS' && estadoActual === 'PAUSED') {\n    accionesNecesarias.push({\n      json: {\n        campaignId: row.campaign.id,\n        campaignName: row.campaign.name,\n        producto: productData.titulo,\n        stock: productData.stock,\n        estadoActual,\n        accion: 'ACTIVAR',\n        nuevoEstado: 'ENABLED'\n      }\n    });\n  }\n}\n\nreturn accionesNecesarias.length > 0 ? accionesNecesarias : [{ json: { accion: 'SIN_CAMBIO', campaignName: rows[0].campaign.name } }];"
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000005",
+      "name": "Determinar cambio necesario",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ $json.accion }}",
+              "rightValue": "SIN_CAMBIO",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "cond2",
+              "leftValue": "={{ $json.accion }}",
+              "rightValue": "SIN_CAMPAÑA",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000006",
+      "name": "¿Hay que cambiar estado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://googleads.googleapis.com/v17/customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/campaigns:mutate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAdsOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "developer-token",
+              "value": "={{ $vars.GOOGLE_ADS_DEVELOPER_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"operations\": [\n    {\n      \"update\": {\n        \"resourceName\": \"customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/campaigns/{{ $json.campaignId }}\",\n        \"status\": \"{{ $json.nuevoEstado }}\"\n      },\n      \"updateMask\": \"status\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000007",
+      "name": "Actualizar estado campaña",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@yanitrend.com",
+        "toEmail": "={{ $vars.EMAIL_ALERTAS }}",
+        "subject": "=🔄 [YaniTrend] Campaña {{ $json.accion === 'PAUSAR' ? 'pausada por sin stock' : 'activada por stock disponible' }}: {{ $json.campaignName }}",
+        "emailType": "html",
+        "message": "=<h2>🔄 Sincronización Stock → Google Ads</h2>\n<p>Una campaña cambió de estado automáticamente por cambio de stock en Shopify:</p>\n<table border=\"1\" cellpadding=\"8\" style=\"border-collapse:collapse\">\n  <tr><td><b>Acción</b></td><td>{{ $json.accion === 'PAUSAR' ? '⏸️ PAUSADA (sin stock)' : '▶️ ACTIVADA (stock disponible)' }}</td></tr>\n  <tr><td><b>Campaña</b></td><td>{{ $json.campaignName }}</td></tr>\n  <tr><td><b>Producto</b></td><td>{{ $json.producto }}</td></tr>\n  <tr><td><b>Stock actual</b></td><td>{{ $json.stock }} unidades</td></tr>\n</table>\n<br/>\n<p>🔗 <a href=\"https://ads.google.com/\">Ver en Google Ads</a> | <a href=\"https://admin.shopify.com/store/yanitrend\">Ver en Shopify</a></p>",
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000008",
+      "name": "Notificar cambio de estado",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1780, 200]
+    }
+  ],
+  "connections": {
+    "Cada 2 horas": {
+      "main": [
+        [
+          {
+            "node": "Obtener productos Shopify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener productos Shopify": {
+      "main": [
+        [
+          {
+            "node": "Clasificar por stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar por stock": {
+      "main": [
+        [
+          {
+            "node": "Buscar campaña relacionada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar campaña relacionada": {
+      "main": [
+        [
+          {
+            "node": "Determinar cambio necesario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determinar cambio necesario": {
+      "main": [
+        [
+          {
+            "node": "¿Hay que cambiar estado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay que cambiar estado?": {
+      "main": [
+        [
+          {
+            "node": "Actualizar estado campaña",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar estado campaña": {
+      "main": [
+        [
+          {
+            "node": "Notificar cambio de estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    { "name": "YaniTrend" },
+    { "name": "Google Ads" },
+    { "name": "Shopify" },
+    { "name": "Stock" }
+  ],
+  "notes": "Cada 2 horas verifica el stock de productos en Shopify. Si un producto tiene stock 0 → pausa la campaña de Google Ads correspondiente. Si el stock vuelve → reactiva la campaña automáticamente.\n\nLA CAMPAÑA DEBE TENER el nombre del producto en el título para que la búsqueda funcione."
+}

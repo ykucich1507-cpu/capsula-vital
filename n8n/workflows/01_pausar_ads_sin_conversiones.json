@@ -1,0 +1,209 @@
+{
+  "name": "YaniTrend | 01 - Pausar Ads Sin Conversiones",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Todos los dias 8am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://googleads.googleapis.com/v17/customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/googleAds:searchStream",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAdsOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "developer-token",
+              "value": "={{ $vars.GOOGLE_ADS_DEVELOPER_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"SELECT campaign.id, campaign.name, campaign.status, metrics.cost_micros, metrics.conversions, metrics.clicks, metrics.impressions FROM campaign WHERE segments.date DURING LAST_7_DAYS AND campaign.status = 'ENABLED' ORDER BY metrics.cost_micros DESC\"\n}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Obtener métricas de campañas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\n\nfor (const item of $input.all()) {\n  const body = item.json;\n  \n  // La API devuelve un array de resultados\n  const rows = body[0]?.results || [];\n  \n  for (const row of rows) {\n    const campaign = row.campaign;\n    const metrics = row.metrics;\n    \n    const costARS = (metrics.costMicros || 0) / 1_000_000;\n    const conversions = metrics.conversions || 0;\n    const clicks = metrics.clicks || 0;\n    \n    // REGLA: Gasto > $5000 ARS en 7 días Y cero conversiones\n    if (costARS > 5000 && conversions === 0) {\n      results.push({\n        json: {\n          campaignId: campaign.id,\n          campaignName: campaign.name,\n          gastado: costARS.toFixed(2),\n          conversiones: conversions,\n          clicks: clicks,\n          accion: 'PAUSAR'\n        }\n      });\n    }\n  }\n}\n\nif (results.length === 0) {\n  return [{ json: { mensaje: 'No hay campañas para pausar', total: 0 } }];\n}\n\nreturn results;"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Filtrar sin conversiones",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ $json.accion }}",
+              "rightValue": "PAUSAR",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "¿Hay que pausar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://googleads.googleapis.com/v17/customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/campaigns:mutate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAdsOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "developer-token",
+              "value": "={{ $vars.GOOGLE_ADS_DEVELOPER_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"operations\": [\n    {\n      \"update\": {\n        \"resourceName\": \"customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/campaigns/{{ $json.campaignId }}\",\n        \"status\": \"PAUSED\"\n      },\n      \"updateMask\": \"status\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Pausar campaña en Google Ads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@yanitrend.com",
+        "toEmail": "={{ $vars.EMAIL_ALERTAS }}",
+        "subject": "=⏸️ [YaniTrend] Campaña pausada: {{ $json.campaignName }}",
+        "emailType": "html",
+        "message": "=<h2>⏸️ Campaña pausada automáticamente</h2>\n<p>La siguiente campaña fue pausada porque gastó dinero sin generar conversiones:</p>\n<table border=\"1\" cellpadding=\"8\" style=\"border-collapse:collapse\">\n  <tr><td><b>Campaña</b></td><td>{{ $json.campaignName }}</td></tr>\n  <tr><td><b>ID</b></td><td>{{ $json.campaignId }}</td></tr>\n  <tr><td><b>Gastado (7 días)</b></td><td>${{ $json.gastado }} ARS</td></tr>\n  <tr><td><b>Conversiones</b></td><td>{{ $json.conversiones }}</td></tr>\n  <tr><td><b>Clicks</b></td><td>{{ $json.clicks }}</td></tr>\n</table>\n<br/>\n<p>🔗 <a href=\"https://ads.google.com/\">Ver en Google Ads</a></p>",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Enviar alerta por email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Todos los dias 8am": {
+      "main": [
+        [
+          {
+            "node": "Obtener métricas de campañas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener métricas de campañas": {
+      "main": [
+        [
+          {
+            "node": "Filtrar sin conversiones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar sin conversiones": {
+      "main": [
+        [
+          {
+            "node": "¿Hay que pausar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay que pausar?": {
+      "main": [
+        [
+          {
+            "node": "Pausar campaña en Google Ads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausar campaña en Google Ads": {
+      "main": [
+        [
+          {
+            "node": "Enviar alerta por email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "tags": [
+    { "name": "YaniTrend" },
+    { "name": "Google Ads" },
+    { "name": "Automatización" }
+  ],
+  "notes": "REGLA: Si una campaña gasta más de $5000 ARS en 7 días sin conversiones → se pausa automáticamente y se envía alerta por email.\n\nVARIABLES REQUERIDAS:\n- GOOGLE_ADS_CUSTOMER_ID: ID de cliente sin guiones (ej: 1234567890)\n- GOOGLE_ADS_DEVELOPER_TOKEN: Token de desarrollador de Google Ads API\n- EMAIL_ALERTAS: Email donde recibir las notificaciones\n\nCREDENCIALES N8N:\n- Google Ads OAuth2 API"
+}

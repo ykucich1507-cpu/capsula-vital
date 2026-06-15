@@ -1,0 +1,204 @@
+{
+  "name": "YaniTrend | 02 - Escalar Presupuesto por ROAS",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000001",
+      "name": "Lunes a las 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://googleads.googleapis.com/v17/customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/googleAds:searchStream",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAdsOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "developer-token",
+              "value": "={{ $vars.GOOGLE_ADS_DEVELOPER_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"SELECT campaign.id, campaign.name, campaign.status, campaign_budget.amount_micros, campaign_budget.resource_name, metrics.cost_micros, metrics.conversions, metrics.conversions_value FROM campaign WHERE segments.date DURING LAST_7_DAYS AND campaign.status = 'ENABLED' ORDER BY metrics.cost_micros DESC\"\n}",
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000002",
+      "name": "Obtener campañas activas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Configuración de reglas\nconst ROAS_OBJETIVO = 3;       // ROAS mínimo para escalar (300%)\nconst AUMENTO_PORCENT = 0.20;  // Aumentar presupuesto un 20%\nconst MAX_PRESUPUESTO = 50000; // Tope máximo en ARS\n\nconst resultados = [];\n\nfor (const item of $input.all()) {\n  const body = item.json;\n  const rows = body[0]?.results || [];\n  \n  for (const row of rows) {\n    const campaign = row.campaign;\n    const budget = row.campaignBudget;\n    const metrics = row.metrics;\n    \n    const gasto = (metrics.costMicros || 0) / 1_000_000;\n    const conversiones = metrics.conversions || 0;\n    const valorConversiones = metrics.conversionsValue || 0;\n    \n    // Calcular ROAS\n    const roas = gasto > 0 ? valorConversiones / gasto : 0;\n    const presupuestoActual = (budget?.amountMicros || 0) / 1_000_000;\n    const nuevoPres = presupuestoActual * (1 + AUMENTO_PORCENT);\n    \n    const accion = (() => {\n      if (gasto === 0) return 'SIN_GASTO';\n      if (roas >= ROAS_OBJETIVO && nuevoPres <= MAX_PRESUPUESTO) return 'ESCALAR';\n      if (roas >= ROAS_OBJETIVO && nuevoPres > MAX_PRESUPUESTO) return 'EN_TOPE';\n      if (roas < 1 && gasto > 3000) return 'REVISAR';\n      return 'OK';\n    })();\n    \n    resultados.push({\n      json: {\n        campaignId: campaign.id,\n        campaignName: campaign.name,\n        budgetResourceName: budget?.resourceName,\n        gasto: gasto.toFixed(2),\n        valorConversiones: valorConversiones.toFixed(2),\n        conversiones: conversiones,\n        roas: roas.toFixed(2),\n        presupuestoActual: presupuestoActual.toFixed(2),\n        nuevoPresupuesto: nuevoPres.toFixed(2),\n        nuevoPres_micros: Math.round(nuevoPres * 1_000_000),\n        accion\n      }\n    });\n  }\n}\n\nreturn resultados.length > 0 ? resultados : [{ json: { accion: 'SIN_DATOS' } }];"
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000003",
+      "name": "Calcular ROAS y acción",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ $json.accion }}",
+              "rightValue": "ESCALAR",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000004",
+      "name": "¿ROAS suficiente para escalar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://googleads.googleapis.com/v17/customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/campaignBudgets:mutate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAdsOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "developer-token",
+              "value": "={{ $vars.GOOGLE_ADS_DEVELOPER_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"operations\": [\n    {\n      \"update\": {\n        \"resourceName\": \"{{ $json.budgetResourceName }}\",\n        \"amountMicros\": \"{{ $json.nuevoPres_micros }}\"\n      },\n      \"updateMask\": \"amountMicros\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000005",
+      "name": "Aumentar presupuesto 20%",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@yanitrend.com",
+        "toEmail": "={{ $vars.EMAIL_ALERTAS }}",
+        "subject": "=📈 [YaniTrend] Presupuesto escalado: {{ $json.campaignName }}",
+        "emailType": "html",
+        "message": "=<h2>📈 Presupuesto aumentado automáticamente</h2>\n<p>Una campaña con buen ROAS tuvo su presupuesto aumentado +20%:</p>\n<table border=\"1\" cellpadding=\"8\" style=\"border-collapse:collapse\">\n  <tr><td><b>Campaña</b></td><td>{{ $json.campaignName }}</td></tr>\n  <tr><td><b>ROAS (7 días)</b></td><td>{{ $json.roas }}x</td></tr>\n  <tr><td><b>Gasto</b></td><td>${{ $json.gasto }} ARS</td></tr>\n  <tr><td><b>Valor conversiones</b></td><td>${{ $json.valorConversiones }} ARS</td></tr>\n  <tr><td><b>Presupuesto anterior</b></td><td>${{ $json.presupuestoActual }} ARS/día</td></tr>\n  <tr><td><b>Nuevo presupuesto</b></td><td>${{ $json.nuevoPresupuesto }} ARS/día</td></tr>\n</table>\n<br/>\n<p>🔗 <a href=\"https://ads.google.com/\">Ver en Google Ads</a></p>",
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000006",
+      "name": "Notificar escalado",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Lunes a las 9am": {
+      "main": [
+        [
+          {
+            "node": "Obtener campañas activas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener campañas activas": {
+      "main": [
+        [
+          {
+            "node": "Calcular ROAS y acción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular ROAS y acción": {
+      "main": [
+        [
+          {
+            "node": "¿ROAS suficiente para escalar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿ROAS suficiente para escalar?": {
+      "main": [
+        [
+          {
+            "node": "Aumentar presupuesto 20%",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aumentar presupuesto 20%": {
+      "main": [
+        [
+          {
+            "node": "Notificar escalado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    { "name": "YaniTrend" },
+    { "name": "Google Ads" },
+    { "name": "Automatización" }
+  ],
+  "notes": "REGLA: Cada lunes a las 9am revisa todas las campañas activas. Si ROAS >= 3x en los últimos 7 días → aumenta el presupuesto diario un 20% (hasta un máximo de $50.000 ARS/día).\n\nVARIABLES REQUERIDAS:\n- GOOGLE_ADS_CUSTOMER_ID\n- GOOGLE_ADS_DEVELOPER_TOKEN\n- EMAIL_ALERTAS"
+}

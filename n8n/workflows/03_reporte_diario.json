@@ -1,0 +1,119 @@
+{
+  "name": "YaniTrend | 03 - Reporte Diario Google Ads",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "c1b2c3d4-0003-0003-0003-000000000001",
+      "name": "Todos los dias 7am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://googleads.googleapis.com/v17/customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/googleAds:searchStream",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleAdsOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "developer-token",
+              "value": "={{ $vars.GOOGLE_ADS_DEVELOPER_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"query\": \"SELECT campaign.name, campaign.status, metrics.cost_micros, metrics.clicks, metrics.impressions, metrics.ctr, metrics.average_cpc, metrics.conversions, metrics.conversions_value, metrics.cost_per_conversion FROM campaign WHERE segments.date DURING YESTERDAY ORDER BY metrics.cost_micros DESC\"\n}",
+        "options": {}
+      },
+      "id": "c1b2c3d4-0003-0003-0003-000000000002",
+      "name": "Métricas de ayer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.first().json[0]?.results || [];\n\nlet totalGasto = 0;\nlet totalClicks = 0;\nlet totalImpresiones = 0;\nlet totalConversiones = 0;\nlet totalValorConv = 0;\n\nconst campanas = [];\n\nfor (const row of rows) {\n  const m = row.metrics;\n  const gasto = (m.costMicros || 0) / 1_000_000;\n  const clicks = m.clicks || 0;\n  const imp = m.impressions || 0;\n  const conv = m.conversions || 0;\n  const valConv = m.conversionsValue || 0;\n  const ctr = ((m.ctr || 0) * 100).toFixed(2);\n  const cpc = ((m.averageCpc || 0) / 1_000_000).toFixed(2);\n  const cpa = conv > 0 ? (gasto / conv).toFixed(2) : 'N/A';\n  const roas = gasto > 0 ? (valConv / gasto).toFixed(2) : '0';\n  \n  totalGasto += gasto;\n  totalClicks += clicks;\n  totalImpresiones += imp;\n  totalConversiones += conv;\n  totalValorConv += valConv;\n  \n  const estado = row.campaign.status === 'ENABLED' ? '🟢' : '⏸️';\n  \n  campanas.push(`\n    <tr>\n      <td>${estado} ${row.campaign.name}</td>\n      <td>$${gasto.toFixed(0)}</td>\n      <td>${imp.toLocaleString()}</td>\n      <td>${clicks}</td>\n      <td>${ctr}%</td>\n      <td>$${cpc}</td>\n      <td>${conv}</td>\n      <td>${roas}x</td>\n      <td>${cpa === 'N/A' ? '-' : '$' + cpa}</td>\n    </tr>`);\n}\n\nconst roasTotal = totalGasto > 0 ? (totalValorConv / totalGasto).toFixed(2) : '0';\nconst ctrTotal = totalImpresiones > 0 ? ((totalClicks / totalImpresiones) * 100).toFixed(2) : '0';\n\nconst hoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n\nconst html = `\n<h1>📊 Reporte YaniTrend - Google Ads</h1>\n<p><b>Fecha:</b> ${hoy}</p>\n\n<h2>Resumen General (Ayer)</h2>\n<table border=\"1\" cellpadding=\"8\" style=\"border-collapse:collapse;font-family:Arial\">\n  <tr style=\"background:#f0f0f0\">\n    <td><b>Gasto total</b></td>\n    <td><b>Impresiones</b></td>\n    <td><b>Clicks</b></td>\n    <td><b>CTR</b></td>\n    <td><b>Conversiones</b></td>\n    <td><b>ROAS</b></td>\n  </tr>\n  <tr>\n    <td>$${totalGasto.toFixed(0)} ARS</td>\n    <td>${totalImpresiones.toLocaleString()}</td>\n    <td>${totalClicks}</td>\n    <td>${ctrTotal}%</td>\n    <td>${totalConversiones}</td>\n    <td>${roasTotal}x</td>\n  </tr>\n</table>\n\n<h2>Por Campaña</h2>\n<table border=\"1\" cellpadding=\"8\" style=\"border-collapse:collapse;font-family:Arial\">\n  <tr style=\"background:#4285f4;color:white\">\n    <th>Campaña</th>\n    <th>Gasto</th>\n    <th>Impres.</th>\n    <th>Clicks</th>\n    <th>CTR</th>\n    <th>CPC</th>\n    <th>Conv.</th>\n    <th>ROAS</th>\n    <th>CPA</th>\n  </tr>\n  ${campanas.join('')}\n</table>\n\n<br/>\n<p style=\"color:#666\">📧 Reporte automático de YaniTrend | <a href=\"https://ads.google.com/\">Abrir Google Ads</a></p>\n`;\n\nreturn [{ json: { html, totalGasto: totalGasto.toFixed(0), totalConversiones, roasTotal, campanas: rows.length } }];"
+      },
+      "id": "c1b2c3d4-0003-0003-0003-000000000003",
+      "name": "Armar reporte HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "reportes@yanitrend.com",
+        "toEmail": "={{ $vars.EMAIL_ALERTAS }}",
+        "subject": "=📊 Reporte Google Ads YaniTrend | Gasto ayer: ${{ $json.totalGasto }} ARS | ROAS: {{ $json.roasTotal }}x",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "c1b2c3d4-0003-0003-0003-000000000004",
+      "name": "Enviar reporte por email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Todos los dias 7am": {
+      "main": [
+        [
+          {
+            "node": "Métricas de ayer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Métricas de ayer": {
+      "main": [
+        [
+          {
+            "node": "Armar reporte HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar reporte HTML": {
+      "main": [
+        [
+          {
+            "node": "Enviar reporte por email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    { "name": "YaniTrend" },
+    { "name": "Google Ads" },
+    { "name": "Reportes" }
+  ],
+  "notes": "Todos los días a las 7am envía un reporte completo de las métricas del día anterior: gasto, impresiones, clicks, CTR, conversiones y ROAS por campaña."
+}
