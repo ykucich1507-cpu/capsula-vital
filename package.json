@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "remotion": "remotion studio remotion/index.ts",
+    "remotion:render": "remotion render remotion/index.ts EstanteAd out/estante-ad.mp4"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.478",
