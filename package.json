@@ -9,9 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@remotion/cli": "^4.0.478",
+    "@remotion/player": "^4.0.478",
     "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",
+    "remotion": "^4.0.478",
     "resend": "^6.12.4"
   },
   "devDependencies": {
