@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { MercadoPagoConfig, Preference } from 'mercadopago'
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'yanitrend2026'
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || ''
@@ -74,16 +75,15 @@ Si no llega o no te convence, no pagás.
 
 Respondé con todos los datos juntos y listo 🚀`,
 
-  confirmacion: (nombre: string, producto: string, productoKey?: string) =>
+  confirmacion: (nombre: string, producto: string, paymentLink?: string | null) =>
     `✅ *¡Pedido registrado, ${nombre}!*
 
 📦 Producto: ${producto}
 🚚 Llega en 3 a 7 días hábiles
 
-💳 *¿Querés pagar online con Mercado Pago?*
-👉 https://yanitrend.com/checkout?producto=${productoKey || 'vaso-termico'}&nombre=${encodeURIComponent(nombre)}
-
-💵 O también podés pagar en efectivo al recibir.
+${paymentLink
+  ? `💳 *Pagá ahora con Mercado Pago (más rápido):*\n👉 ${paymentLink}\n\n💵 O también podés pagar en efectivo al recibir.`
+  : `💵 Pagás al recibir — no adelantás nada 🤝`}
 
 ¡Gracias por elegirnos! 💕 — *Yani Trend*`,
 
@@ -118,6 +118,73 @@ const PRODUCTO_KEYS: Record<string, string> = {
   'Vaso Térmico con Sensor 400ml': 'vaso-termico',
   'Termo con Sensor 500ml': 'termo-sensor',
   'Parlante Clip 5 Bluetooth': 'parlante-clip5',
+}
+
+const PRODUCTO_PRECIOS: Record<string, { nombre: string; precio: number }> = {
+  'vaso-termico': { nombre: 'Vaso Térmico con Sensor de Temperatura 400ml', precio: 29900 },
+  'termo-sensor': { nombre: 'Termo con Sensor de Temperatura 500ml', precio: 35900 },
+  'parlante-clip5': { nombre: 'Parlante Clip 5 Bluetooth', precio: 23900 },
+}
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://yanitrend.com'
+
+async function createMPPaymentLink(
+  productoKey: string,
+  form: Partial<OrderForm>,
+  from: string,
+): Promise<string | null> {
+  const token = process.env.MERCADOPAGO_ACCESS_TOKEN
+  if (!token) return null
+
+  const prod = PRODUCTO_PRECIOS[productoKey]
+  if (!prod) return null
+
+  const cantidad = Math.max(1, Math.min(10, parseInt(form.cantidad || '1', 10) || 1))
+
+  try {
+    const client = new MercadoPagoConfig({ accessToken: token })
+    const preference = new Preference(client)
+    const result = await preference.create({
+      body: {
+        items: [
+          {
+            id: productoKey,
+            title: prod.nombre,
+            quantity: cantidad,
+            unit_price: prod.precio,
+            currency_id: 'ARS',
+          },
+        ],
+        payer: {
+          name: form.nombre,
+          phone: { number: form.telefono || from },
+          address: {
+            street_name: form.direccion,
+            zip_code: form.cp,
+          },
+        },
+        back_urls: {
+          success: `${BASE_URL}/checkout/success`,
+          failure: `${BASE_URL}/checkout/error`,
+          pending: `${BASE_URL}/checkout/success?pendiente=1`,
+        },
+        auto_return: 'approved',
+        statement_descriptor: 'YANI TREND',
+        external_reference: `WA-${from}-${Date.now()}`,
+        metadata: {
+          canal: 'whatsapp',
+          cliente: form.nombre,
+          telefono: from,
+          direccion: `${form.direccion || ''}, ${form.ciudad || ''} (${form.cp || ''})`,
+          producto: prod.nombre,
+          cantidad,
+        },
+      },
+    })
+    return result.init_point || null
+  } catch {
+    return null
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -226,9 +293,14 @@ async function handleMessage(from: string, text: string) {
     if (filled >= 4 && state.formData.nombre) {
       // Suficientes datos — confirmar pedido
       const product = state.product || 'Producto'
+      const productoKey = PRODUCTO_KEYS[product]
       state.step = 'confirmado'
       sessions.set(from, state)
-      await sendWhatsApp(from, MSG.confirmacion(state.formData.nombre, product, PRODUCTO_KEYS[product]))
+
+      // Generar link de pago de MP directamente en WhatsApp (opción B)
+      const paymentLink = await createMPPaymentLink(productoKey, state.formData, from)
+
+      await sendWhatsApp(from, MSG.confirmacion(state.formData.nombre, product, paymentLink))
       await notifyNewOrder(from, product, state.formData)
       return
     }
