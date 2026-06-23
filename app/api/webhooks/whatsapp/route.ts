@@ -37,18 +37,20 @@ Tenemos ofertas especiales hoy con *pago contra entrega* 💵
 🌡️ Vaso Térmico con Sensor 400ml → *$29.900*
 🫙 Termo con Sensor 500ml → *$35.900*
 🎵 Parlante Clip 5 Bluetooth → *$23.900*
+🌬️ Nebulizador Mesh Inalámbrico → *$49.900* (envío gratis)
 
 ¿Cuál te interesa? Respondé el número:
 *1* - Vaso Térmico
 *2* - Termo Sensor
 *3* - Parlante Clip 5
-*4* - Ver los 3`,
+*4* - Nebulizador Mesh`,
 
   precios: `🔥 *Ofertas especiales Yani Trend:*
 
 🌡️ Vaso Térmico con Sensor 400ml → *$29.900*
 🫙 Termo con Sensor 500ml → *$35.900*
 🎵 Parlante Clip 5 Bluetooth → *$23.900*
+🌬️ Nebulizador Mesh Inalámbrico → *$49.900* (envío gratis)
 
 Envío a todo el país · Pagás al recibir 🇦🇷
 ¿Cuál te interesa?`,
@@ -112,18 +114,24 @@ const PRODUCTOS: Record<string, string> = {
   '3': 'Parlante Clip 5 Bluetooth',
   'parlante': 'Parlante Clip 5 Bluetooth',
   'clip': 'Parlante Clip 5 Bluetooth',
+  '4': 'Nebulizador Mesh Inalámbrico',
+  'nebulizador': 'Nebulizador Mesh Inalámbrico',
+  'nebulizar': 'Nebulizador Mesh Inalámbrico',
+  'nebulizacion': 'Nebulizador Mesh Inalámbrico',
 }
 
 const PRODUCTO_KEYS: Record<string, string> = {
   'Vaso Térmico con Sensor 400ml': 'vaso-termico',
   'Termo con Sensor 500ml': 'termo-sensor',
   'Parlante Clip 5 Bluetooth': 'parlante-clip5',
+  'Nebulizador Mesh Inalámbrico': 'nebulizador-mesh',
 }
 
 const PRODUCTO_PRECIOS: Record<string, { nombre: string; precio: number }> = {
   'vaso-termico': { nombre: 'Vaso Térmico con Sensor de Temperatura 400ml', precio: 29900 },
   'termo-sensor': { nombre: 'Termo con Sensor de Temperatura 500ml', precio: 35900 },
   'parlante-clip5': { nombre: 'Parlante Clip 5 Bluetooth', precio: 23900 },
+  'nebulizador-mesh': { nombre: 'Nebulizador Mesh Inalámbrico', precio: 49900 },
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://yanitrend.com'

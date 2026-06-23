@@ -22,6 +22,12 @@ const PRODUCTOS: Record<string, { nombre: string; precio: number; precioOriginal
     precioOriginal: 36000,
     imagen: 'https://cdn.shopify.com/s/files/1/0794/4808/0616/files/imgi_6_1758490472termocafe.jpg',
   },
+  'nebulizador-mesh': {
+    nombre: 'Nebulizador Mesh Inalámbrico',
+    precio: 49900,
+    precioOriginal: 79900,
+    imagen: 'https://cdn.shopify.com/s/files/1/0794/4808/0616/files/nebulizador-mesh.jpg',
+  },
 }
 
 const PROVINCIAS = [
