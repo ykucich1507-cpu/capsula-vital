@@ -11,7 +11,7 @@ const PRODUCT = {
   url: 'https://yanitrend.com/products/termo-con-sensor-de-temperatura',
 }
 
-const WHATSAPP_NUMBER = '5492995055178'
+const WHATSAPP_NUMBER = '5492996593402'
 
 interface Message {
   role: 'bot' | 'user'
