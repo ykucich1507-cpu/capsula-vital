@@ -72,7 +72,6 @@ export async function POST(request: NextRequest) {
           identification: { type: 'DNI', number: body.dni },
           address: {
             street_name: body.direccion,
-            city: body.ciudad,
             zip_code: body.cp,
           },
         },

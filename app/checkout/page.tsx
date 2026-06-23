@@ -70,14 +70,14 @@ const LABEL_STYLE: React.CSSProperties = {
 
 function CheckoutContent() {
   const params = useSearchParams()
-  const productoKey = params.get('producto') || 'vaso-termico'
+  const [productoKey, setProductoKey] = useState(params.get('producto') || 'vaso-termico')
   const producto = PRODUCTOS[productoKey] || PRODUCTOS['vaso-termico']
 
   const [form, setForm] = useState<FormData>({
-    nombre: '',
+    nombre: params.get('nombre') || '',
     apellido: '',
     email: '',
-    telefono: '',
+    telefono: params.get('telefono') || '',
     dni: '',
     direccion: '',
     ciudad: '',
@@ -212,12 +212,7 @@ function CheckoutContent() {
                   name="producto"
                   value={key}
                   checked={productoKey === key}
-                  onChange={() => {
-                    const url = new URL(window.location.href)
-                    url.searchParams.set('producto', key)
-                    window.history.replaceState({}, '', url.toString())
-                    window.location.reload()
-                  }}
+                  onChange={() => setProductoKey(key)}
                   style={{ accentColor: '#E6007E' }}
                 />
                 <div style={{ flex: 1 }}>

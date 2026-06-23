@@ -74,14 +74,17 @@ Si no llega o no te convence, no pagás.
 
 Respondé con todos los datos juntos y listo 🚀`,
 
-  confirmacion: (nombre: string, producto: string) =>
-    `✅ *¡Pedido confirmado, ${nombre}!*
+  confirmacion: (nombre: string, producto: string, productoKey?: string) =>
+    `✅ *¡Pedido registrado, ${nombre}!*
 
 📦 Producto: ${producto}
 🚚 Llega en 3 a 7 días hábiles
-💵 Pagás al recibir — no adelantás nada
 
-Te avisamos cuando salga con el número de seguimiento 📲
+💳 *¿Querés pagar online con Mercado Pago?*
+👉 https://yanitrend.com/checkout?producto=${productoKey || 'vaso-termico'}&nombre=${encodeURIComponent(nombre)}
+
+💵 O también podés pagar en efectivo al recibir.
+
 ¡Gracias por elegirnos! 💕 — *Yani Trend*`,
 
   postventa: (nombre: string) =>
@@ -109,6 +112,12 @@ const PRODUCTOS: Record<string, string> = {
   '3': 'Parlante Clip 5 Bluetooth',
   'parlante': 'Parlante Clip 5 Bluetooth',
   'clip': 'Parlante Clip 5 Bluetooth',
+}
+
+const PRODUCTO_KEYS: Record<string, string> = {
+  'Vaso Térmico con Sensor 400ml': 'vaso-termico',
+  'Termo con Sensor 500ml': 'termo-sensor',
+  'Parlante Clip 5 Bluetooth': 'parlante-clip5',
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -219,7 +228,7 @@ async function handleMessage(from: string, text: string) {
       const product = state.product || 'Producto'
       state.step = 'confirmado'
       sessions.set(from, state)
-      await sendWhatsApp(from, MSG.confirmacion(state.formData.nombre, product))
+      await sendWhatsApp(from, MSG.confirmacion(state.formData.nombre, product, PRODUCTO_KEYS[product]))
       await notifyNewOrder(from, product, state.formData)
       return
     }

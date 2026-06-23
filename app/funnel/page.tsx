@@ -356,6 +356,21 @@ export default function FunnelPage() {
             </div>
 
             {/* Input */}
+            {step >= 4 && leadData.phone && (
+              <div style={{ padding: '12px 16px 4px', borderTop: '1px solid #eee' }}>
+                <a
+                  href={`/checkout?producto=vaso-termico&nombre=${encodeURIComponent(leadData.name || '')}&telefono=${encodeURIComponent(leadData.phone || '')}`}
+                  style={{
+                    display: 'block', width: '100%', background: 'linear-gradient(135deg,#009ee3,#0073c4)',
+                    color: '#fff', borderRadius: 12, padding: '14px', fontSize: 15, fontWeight: 700,
+                    textDecoration: 'none', textAlign: 'center', marginBottom: 8, boxSizing: 'border-box',
+                    boxShadow: '0 4px 14px rgba(0,115,196,0.3)',
+                  }}
+                >
+                  💳 Pagar ahora con Mercado Pago
+                </a>
+              </div>
+            )}
             {step < 4 ? (
               <div style={{ padding: '12px 16px', borderTop: '1px solid #eee', display: 'flex', gap: 8 }}>
                 <input

@@ -175,7 +175,7 @@ export default function Home() {
               <h1 className="hero-h1">Tu mejor versión,<br />entregada <em>en casa</em></h1>
               <p className="hero-sub">Elegís online, te lo enviamos gratis y pagás en efectivo cuando tenés el paquete en tus manos. Sin tarjetas, sin trucos, sin riesgos.</p>
               <div className="hero-ctas">
-                <a href="https://yanitrend.com/collections/all" className="btn btn-primary btn-lg">
+                <a href="/funnel" className="btn btn-primary btn-lg">
                   <i data-lucide="package" style={{width:19,height:19}}></i>
                   Pedir ahora y pagar en casa
                 </a>
@@ -330,7 +330,7 @@ export default function Home() {
             <div className="eye">¿Lista para pedirlo?</div>
             <h2>Pagá cuando lo tenés<br />en tus <em>manos</em></h2>
             <p>Sin tarjetas, sin adelantos, sin riesgos. Solo completás tu dirección y nosotros nos encargamos del resto.</p>
-            <a href="https://yanitrend.com/collections/all" className="btn btn-primary btn-lg">
+            <a href="/funnel" className="btn btn-primary btn-lg">
               <i data-lucide="package" style={{width:19,height:19}}></i>
               Hacer mi pedido ahora
             </a>

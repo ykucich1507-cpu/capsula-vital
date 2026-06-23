@@ -2,6 +2,61 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
+const DASHBOARD_PIN = 'yani2026'
+
+function PinScreen({ onUnlock }: { onUnlock: () => void }) {
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState(false)
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (pin === DASHBOARD_PIN) {
+      localStorage.setItem('dashboard_auth', '1')
+      onUnlock()
+    } else {
+      setError(true)
+      setPin('')
+      setTimeout(() => setError(false), 2000)
+    }
+  }
+
+  return (
+    <div style={{ fontFamily: "'Poppins', sans-serif", background: '#F3E9DF', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#fff', borderRadius: 20, padding: '40px 32px', maxWidth: 340, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.10)', textAlign: 'center' }}>
+        <p style={{ fontSize: 40, margin: '0 0 8px' }}>🔒</p>
+        <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 800, color: '#2B2B2B' }}>Dashboard Yani Trend</h2>
+        <p style={{ margin: '0 0 24px', fontSize: 13, color: '#888' }}>Ingresá el PIN de acceso</p>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            value={pin}
+            onChange={e => setPin(e.target.value)}
+            placeholder="PIN"
+            autoFocus
+            style={{
+              width: '100%', border: `2px solid ${error ? '#ef4444' : '#e0e0e0'}`, borderRadius: 10,
+              padding: '14px', fontSize: 20, textAlign: 'center', letterSpacing: 6,
+              fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+              background: error ? '#fff5f5' : '#fafafa', marginBottom: 12,
+              transition: 'border-color 0.2s',
+            }}
+          />
+          {error && <p style={{ color: '#ef4444', fontSize: 13, margin: '0 0 12px', fontWeight: 600 }}>PIN incorrecto</p>}
+          <button
+            type="submit"
+            style={{
+              width: '100%', background: '#E6007E', color: '#fff', border: 'none',
+              borderRadius: 10, padding: '14px', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            Entrar →
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 interface Lead {
   id: string
   name: string
@@ -40,10 +95,15 @@ function kpiCard(label: string, value: string | number, sub?: string, color = '#
 }
 
 export default function Dashboard() {
+  const [authed, setAuthed] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
   const [selected, setSelected] = useState<Lead | null>(null)
   const [filter, setFilter] = useState<Lead['status'] | 'todos'>('todos')
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (localStorage.getItem('dashboard_auth') === '1') setAuthed(true)
+  }, [])
 
   const fetchLeads = useCallback(async () => {
     try {
@@ -74,6 +134,8 @@ export default function Dashboard() {
   const ingresosEst = vendidos * 35900
 
   const filtered = filter === 'todos' ? leads : leads.filter(l => l.status === filter)
+
+  if (!authed) return <PinScreen onUnlock={() => setAuthed(true)} />
 
   return (
     <div style={{ fontFamily: "'Poppins', sans-serif", background: '#F3E9DF', minHeight: '100vh', color: '#2B2B2B' }}>
