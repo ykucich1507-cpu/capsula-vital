@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 
-const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'yanitrend2026'
+const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'yanitrend2024'
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || ''
-const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || ''
+const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || '1131682663371291'
 const REPORT_EMAIL = 'ykucich1507@gmail.com'
 
 // Estado de conversación en memoria (se resetea al reiniciar, suficiente para Vercel)
