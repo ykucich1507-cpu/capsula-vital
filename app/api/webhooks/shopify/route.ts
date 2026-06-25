@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { promises as fs } from 'fs'
+import { searchContactByPhone, updateContactAttributes } from '@/lib/chatwoot'
 
 const LEADS_FILE = '/tmp/yanitrend-leads.json'
 
@@ -29,11 +30,32 @@ function handleOrderCreate(payload: unknown): void {
   console.log('[shopify/orders/create]', JSON.stringify(payload))
 }
 
+async function syncOrderToChatwoot(
+  phone: string,
+  order: { id?: number; name?: string; total_price?: string }
+): Promise<void> {
+  const contact = await searchContactByPhone(phone)
+  if (!contact) return
+  await updateContactAttributes(contact.id, {
+    shopify_order_id: String(order.name || order.id || ''),
+    shopify_total: String(order.total_price || ''),
+    shopify_status: 'paid',
+  })
+}
+
 async function handleOrderPaid(payload: unknown): Promise<void> {
-  const order = payload as { phone?: string; billing_address?: { phone?: string }; customer?: { phone?: string } }
+  const order = payload as {
+    id?: number
+    name?: string
+    total_price?: string
+    phone?: string
+    billing_address?: { phone?: string }
+    customer?: { phone?: string }
+  }
   const phone = order.phone || order.billing_address?.phone || order.customer?.phone || ''
   if (phone) {
     await updateLeadStatus(phone, 'vendido')
+    syncOrderToChatwoot(phone, order).catch(console.error)
     console.log('[shopify/orders/paid] lead marcado como vendido:', phone)
   }
 }

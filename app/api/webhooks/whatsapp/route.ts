@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { findOrCreateContact, findOrCreateConversation, addMessage } from '@/lib/chatwoot'
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'yanitrend2026'
 const WA_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || ''
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || ''
+const CHATWOOT_WA_INBOX_ID = Number(process.env.CHATWOOT_WHATSAPP_INBOX_ID || '0')
 const REPORT_EMAIL = 'ykucich1507@gmail.com'
 
 // Estado de conversación en memoria (se resetea al reiniciar, suficiente para Vercel)
@@ -291,6 +293,17 @@ async function handleMessage(from: string, text: string) {
   sessions.set(from, state)
 }
 
+// ── Chatwoot forwarding ───────────────────────────────────────────────────────
+
+async function forwardToChatwoot(phone: string, text: string) {
+  if (!CHATWOOT_WA_INBOX_ID) return
+  const contact = await findOrCreateContact(phone)
+  if (!contact) return
+  const conv = await findOrCreateConversation(contact.id, CHATWOOT_WA_INBOX_ID)
+  if (!conv) return
+  await addMessage(conv.id, text, 'incoming')
+}
+
 // ── Route handlers ────────────────────────────────────────────────────────────
 
 // Meta verifica el webhook con GET
@@ -327,6 +340,7 @@ export async function POST(request: NextRequest) {
 
     // Procesar en background para responder a Meta rápido
     handleMessage(from, text).catch(console.error)
+    forwardToChatwoot(from, text).catch(console.error)
 
     return NextResponse.json({ ok: true })
   } catch {
