@@ -358,8 +358,8 @@ export default function Home() {
             </div>
             <div className="hero-img-wrap reveal reveal-d2">
               <img
-                src="https://cdn.shopify.com/s/files/1/0794/4808/0616/files/imgi_6_17783404941774880653aspiradorarobot.jpg"
-                alt="Aspiradora Robot Jessica"
+                src="https://images.unsplash.com/photo-1617104678098-de229db51175?w=900&q=85&fit=crop"
+                alt="Comedor moderno y luminoso"
               />
             </div>
           </div>
