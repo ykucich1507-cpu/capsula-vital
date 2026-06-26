@@ -31,7 +31,7 @@ interface OrderForm {
 const MSG = {
   bienvenida: `Hola 👋 ¡Gracias por escribirnos a *Yani Trend*!
 
-Tenemos ofertas especiales hoy con *pago contra entrega* 💵
+Tenemos ofertas especiales hoy 🎉 Pagá seguro con *Mercado Pago* 💳
 
 🌡️ Vaso Térmico con Sensor 400ml → *$29.900*
 🫙 Termo con Sensor 500ml → *$35.900*
@@ -49,16 +49,16 @@ Tenemos ofertas especiales hoy con *pago contra entrega* 💵
 🫙 Termo con Sensor 500ml → *$35.900*
 🎵 Parlante Clip 5 Bluetooth → *$23.900*
 
-Envío a todo el país · Pagás al recibir 🇦🇷
+Envío a todo el país · Pagá con Mercado Pago 🇦🇷
 ¿Cuál te interesa?`,
 
   envio: `🚚 El envío llega en *3 a 7 días hábiles* a todo el país.
-*Pagás todo al recibir* — no adelantás nada 💵
+Pagá de forma segura con *Mercado Pago* — tarjeta, débito o dinero en cuenta 💳
 ¿Te hacemos el pedido?`,
 
   confianza: `¡Entiendo la duda! 😊 Yani Trend lleva más de 1 año enviando a todo el país.
-Lo más importante: *no pagás nada hasta tener el paquete en tus manos* 💵
-Si no llega o no te convence, no pagás.
+Usamos *Mercado Pago* para que tu compra esté siempre protegida 🔒
+Si no llega o no te convence, Mercado Pago te respalda.
 ¿Querés que te cuente cómo es el proceso?`,
 
   formulario: (producto: string) =>
@@ -79,7 +79,7 @@ Respondé con todos los datos juntos y listo 🚀`,
 
 📦 Producto: ${producto}
 🚚 Llega en 3 a 7 días hábiles
-💵 Pagás al recibir — no adelantás nada
+💳 Pago procesado con Mercado Pago
 
 Te avisamos cuando salga con el número de seguimiento 📲
 ¡Gracias por elegirnos! 💕 — *Yani Trend*`,

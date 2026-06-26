@@ -145,9 +145,9 @@ export default function Home() {
       <div className="ann">
         Envío gratis a todo el país
         <span className="sep">·</span>
-        Sin tarjetas ni datos bancarios
+        Pagá con Mercado Pago de forma segura
         <span className="sep">·</span>
-        Pagás cuando el paquete llega a tu puerta
+        Compra protegida garantizada
       </div>
 
       <header className="hdr">
@@ -173,11 +173,11 @@ export default function Home() {
             <div>
               <div className="eye hero-eye">Nueva colección · Envío gratis</div>
               <h1 className="hero-h1">Tu mejor versión,<br />entregada <em>en casa</em></h1>
-              <p className="hero-sub">Elegís online, te lo enviamos gratis y pagás en efectivo cuando tenés el paquete en tus manos. Sin tarjetas, sin trucos, sin riesgos.</p>
+              <p className="hero-sub">Elegís online, te lo enviamos gratis y pagás de forma segura con Mercado Pago. Compra protegida, envío rápido y garantía en cada pedido.</p>
               <div className="hero-ctas">
                 <a href="https://yanitrend.com/collections/all" className="btn btn-primary btn-lg">
                   <i data-lucide="package" style={{width:19,height:19}}></i>
-                  Pedir ahora y pagar en casa
+                  Pedir ahora
                 </a>
                 <a href="#como-funciona" className="ghost-link">
                   ¿Cómo funciona?
@@ -196,9 +196,9 @@ export default function Home() {
         <div className="wrap">
           <div className="trust-grid">
             {[
-              { icon: 'wallet', title: 'Sin tarjetas', desc: 'Pagá en efectivo al recibir' },
+              { icon: 'credit-card', title: 'Mercado Pago', desc: 'Pagá en cuotas con tarjeta o débito' },
               { icon: 'truck', title: 'Envío express gratis', desc: 'A todo el país, sin cargo' },
-              { icon: 'package-open', title: 'Revisión al recibir', desc: 'Abrí el paquete antes de pagar' },
+              { icon: 'lock', title: 'Compra protegida', desc: 'Tu dinero seguro con Mercado Pago' },
               { icon: 'shield-check', title: 'Garantía 30 días', desc: 'Si no te convence, te ayudamos' },
             ].map((item) => (
               <div key={item.title} className="trust-item">
@@ -220,13 +220,13 @@ export default function Home() {
           <div className="sec-hdr">
             <div className="eye">Sin complicaciones</div>
             <h2>Así de fácil es comprar con nosotros</h2>
-            <p>Tres pasos simples. Sin registrarte, sin ingresar datos bancarios. Solo elegís, esperás y pagás cuando recibes.</p>
+            <p>Tres pasos simples. Elegís, pagás de forma segura con Mercado Pago y recibís en tu puerta.</p>
           </div>
           <div className="steps-grid">
             {[
-              { num: '01', icon: 'mouse-pointer-click', title: 'Hacés tu pedido online', desc: 'Elegís el producto, escribís tu nombre y dirección. Listo. No necesitás tarjeta ni crear ninguna cuenta. Solo dos minutos.' },
-              { num: '02', icon: 'package', title: 'Te lo enviamos gratis', desc: 'Tu pedido sale en 24 horas hábiles y llega a tu puerta en 3 a 5 días. Te avisamos en cada paso por WhatsApp.' },
-              { num: '03', icon: 'banknote', title: 'Pagás en efectivo al recibir', desc: 'El repartidor llega, revisás el paquete, y recién ahí entregás el efectivo. Sin adelantar ni un peso.' },
+              { num: '01', icon: 'mouse-pointer-click', title: 'Hacés tu pedido online', desc: 'Elegís el producto y completás tu dirección. Solo dos minutos, sin complicaciones.' },
+              { num: '02', icon: 'credit-card', title: 'Pagás con Mercado Pago', desc: 'Pagá con tarjeta de crédito, débito o dinero en cuenta. Rápido, seguro y con compra protegida.' },
+              { num: '03', icon: 'package', title: 'Te lo enviamos gratis', desc: 'Tu pedido sale en 24 horas hábiles y llega a tu puerta en 3 a 5 días. Te avisamos por WhatsApp.' },
             ].map((s) => (
               <div key={s.num} className="step-card">
                 <div className="step-num">{s.num}</div>
@@ -278,13 +278,13 @@ export default function Home() {
               <div className="spot-ctas">
                 <a href="https://yanitrend.com/products/aspiradora-robot-jessica" className="btn btn-primary btn-lg">
                   <i data-lucide="package" style={{width:19,height:19}}></i>
-                  Quiero la mía · Pago en casa
+                  Quiero la mía · Pagar con Mercado Pago
                 </a>
                 <a href="https://yanitrend.com/products/aspiradora-robot-jessica" className="btn btn-outline">Ver todos los detalles</a>
               </div>
               <div className="spot-guarantee">
                 <i data-lucide="shield-check" style={{width:15,height:15,color:'var(--fucsia)'}}></i>
-                <span>Sin tarjetas · Revisás antes de pagar · Garantía 30 días</span>
+                <span>Pago seguro · Compra protegida · Garantía 30 días</span>
               </div>
             </div>
           </div>
@@ -296,13 +296,13 @@ export default function Home() {
           <div className="sec-hdr">
             <div className="eye">Lo que dicen nuestras clientas</div>
             <h2>Más de 2.000 pedidos entregados</h2>
-            <p>Todas pagaron al recibir. Ninguna adelantó nada.</p>
+            <p>Compraron de forma segura con Mercado Pago y recibieron en su puerta.</p>
           </div>
           <div className="testy-grid">
             {[
-              { init: 'V', name: 'Valentina R.', city: 'Buenos Aires', text: '"Al principio dudé porque era internet, pero me encantó que no tenía que pagar nada hasta recibir el paquete. El producto llegó perfecto y en tiempo."', tag: 'cod', tagText: 'Pagó al recibir', tagIcon: 'check-circle' },
-              { init: 'S', name: 'Sara M.', city: 'Córdoba', text: '"Lo pedí el lunes y llegó el jueves. Pude abrir el paquete para revisar y todo estaba perfecto. Así sí da confianza comprar por internet."', tag: 'cod', tagText: 'Pagó al recibir', tagIcon: 'check-circle' },
-              { init: 'C', name: 'Carolina P.', city: 'Rosario', text: '"Ya van 3 pedidos y siempre fue igual de fácil. Nunca tuve que ingresar mi tarjeta en ningún lado. Solo lleno el formulario y espero que llegue."', tag: 'std', tagText: 'Clienta recurrente', tagIcon: 'repeat' },
+              { init: 'V', name: 'Valentina R.', city: 'Buenos Aires', text: '"Pagué con Mercado Pago y fue súper fácil. El producto llegó perfecto y en tiempo. Muy buena experiencia comprando por internet."', tag: 'std', tagText: 'Compra verificada', tagIcon: 'check-circle' },
+              { init: 'S', name: 'Sara M.', city: 'Córdoba', text: '"Lo pedí el lunes y llegó el jueves. Pagué en cuotas sin interés con mi tarjeta y todo fue muy rápido. Así sí da confianza comprar online."', tag: 'std', tagText: 'Compra verificada', tagIcon: 'check-circle' },
+              { init: 'C', name: 'Carolina P.', city: 'Rosario', text: '"Ya van 3 pedidos y siempre fue igual de fácil. Mercado Pago me da seguridad y los productos siempre llegan en perfectas condiciones."', tag: 'std', tagText: 'Clienta recurrente', tagIcon: 'repeat' },
             ].map((t) => (
               <div key={t.name} className="testy-card">
                 <div className="testy-hdr">
@@ -328,8 +328,8 @@ export default function Home() {
         <div className="wrap">
           <div className="cta-ban-inner">
             <div className="eye">¿Lista para pedirlo?</div>
-            <h2>Pagá cuando lo tenés<br />en tus <em>manos</em></h2>
-            <p>Sin tarjetas, sin adelantos, sin riesgos. Solo completás tu dirección y nosotros nos encargamos del resto.</p>
+            <h2>Comprá con total<br /><em>confianza</em></h2>
+            <p>Pagá de forma segura con Mercado Pago, recibí tu pedido en casa y disfrutá de nuestra garantía de 30 días.</p>
             <a href="https://yanitrend.com/collections/all" className="btn btn-primary btn-lg">
               <i data-lucide="package" style={{width:19,height:19}}></i>
               Hacer mi pedido ahora
@@ -342,7 +342,7 @@ export default function Home() {
         <div className="footer-main">
           <div className="footer-brand">
             <div className="foot-logo">Yani<span className="foot-logo-accent"> Trend</span><span className="foot-logo-dot"></span></div>
-            <p>Moda y accesorios con entrega en casa. Pagás cuando lo recibís en la puerta.</p>
+            <p>Moda y accesorios con entrega a domicilio. Pagá de forma segura con Mercado Pago.</p>
           </div>
           <div className="footer-col">
             <div className="footer-col-hd">Tienda</div>
