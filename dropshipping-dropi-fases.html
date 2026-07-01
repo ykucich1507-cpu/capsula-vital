@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dropshipping con Dropi — Guía Estructural</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    background: #070B14;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    color: #E2E8F0;
+    padding: 24px 16px;
+    position: relative;
+    overflow-x: hidden;
+    margin: 0;
+  }
+  .grid-bg {
+    position: fixed; inset: 0; opacity: 0.04;
+    background-image: linear-gradient(#00E5FF 1px, transparent 1px), linear-gradient(90deg, #00E5FF 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none;
+  }
+  .header { text-align: center; margin-bottom: 32px; position: relative; }
+  .eyebrow { font-size: 11px; letter-spacing: 6px; color: #00E5FF; margin-bottom: 8px; text-transform: uppercase; }
+  h1 {
+    font-size: clamp(22px, 5vw, 40px); font-weight: 900;
+    background: linear-gradient(135deg, #FFFFFF 0%, #00E5FF 50%, #A855F7 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0; letter-spacing: 2px; text-transform: uppercase;
+  }
+  .subtitle { font-size: 13px; color: #94A3B8; margin-top: 8px; letter-spacing: 3px; }
+
+  .kpis {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    max-width: 700px; margin: 0 auto 28px;
+  }
+  .kpi {
+    background: rgba(255,255,255,0.03); border-radius: 10px; padding: 14px; text-align: center;
+  }
+  .kpi-value { font-size: clamp(18px, 4vw, 28px); font-weight: 900; }
+  .kpi-label { font-size: 11px; color: #64748B; letter-spacing: 1px; margin-top: 2px; }
+
+  .content { max-width: 760px; margin: 0 auto; position: relative; }
+  .section-label {
+    font-size: 11px; letter-spacing: 4px; color: #475569; margin-bottom: 14px; text-align: center;
+  }
+
+  .phase { margin-bottom: 10px; }
+  .phase-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #1E293B;
+    cursor: pointer; transition: all 0.25s;
+  }
+  .phase-header.open { border-radius: 10px 10px 0 0; }
+  .phase-icon { font-size: 20px; }
+  .phase-text { flex: 1; }
+  .phase-tag { font-size: 10px; letter-spacing: 3px; }
+  .phase-title { font-size: 14px; font-weight: 700; color: #F1F5F9; letter-spacing: 1px; }
+  .phase-chevron {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; transition: transform 0.25s;
+  }
+  .phase-chevron.open { transform: rotate(180deg); }
+
+  .phase-body {
+    border-top: none; border-radius: 0 0 10px 10px; padding: 16px;
+    display: none;
+  }
+  .phase-body.open { display: block; }
+  .steps-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;
+  }
+  .step {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px; border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+  }
+  .step-icon {
+    width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .step-label { font-size: 12px; font-weight: 700; color: #F1F5F9; margin-bottom: 2px; }
+  .step-detail { font-size: 11px; color: #64748B; }
+
+  .flow-section { margin-top: 20px; }
+  .flow-header {
+    padding: 14px 18px; border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #1E293B;
+    cursor: pointer; display: flex; align-items: center; gap: 14px;
+  }
+  .flow-header.open {
+    border-radius: 10px 10px 0 0;
+    background: rgba(16,185,129,0.1);
+    border-color: #10B981;
+  }
+  .flow-tag { font-size: 10px; letter-spacing: 3px; color: #10B981; }
+  .flow-title { font-size: 14px; font-weight: 700; color: #F1F5F9; }
+  .flow-chevron { font-size: 12px; color: #10B981; transition: transform 0.25s; }
+  .flow-chevron.open { transform: rotate(180deg); }
+  .flow-body {
+    border: 1px solid #10B981; border-top: none; border-radius: 0 0 10px 10px;
+    background: rgba(16,185,129,0.05); padding: 20px; display: none;
+  }
+  .flow-body.open { display: block; }
+  .flow-visual {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin-bottom: 20px;
+  }
+  .flow-arrow { font-size: 20px; color: #334155; }
+  .flow-box {
+    padding: 10px 14px; border-radius: 8px; text-align: center; min-width: 100px;
+  }
+  .flow-box-icon { font-size: 18px; }
+  .flow-box-label { font-size: 11px; font-weight: 700; }
+  .flow-box-sub { font-size: 10px; color: #64748B; }
+  .profit-box {
+    padding: 16px; border-radius: 10px;
+    background: rgba(16,185,129,0.1); border: 1px solid #10B98144; text-align: center;
+  }
+  .profit-label { font-size: 12px; color: #64748B; letter-spacing: 2px; margin-bottom: 4px; }
+  .profit-formula { font-size: clamp(14px, 3vw, 18px); font-weight: 900; color: #10B981; }
+  .profit-note { font-size: 11px; color: #475569; margin-top: 6px; }
+
+  .tips-section {
+    margin-top: 20px; padding: 18px; border-radius: 12px;
+    background: rgba(168,85,247,0.06); border: 1px solid #A855F733;
+  }
+  .tips-title { font-size: 11px; letter-spacing: 3px; color: #A855F7; margin-bottom: 12px; }
+  .tips-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;
+  }
+  .tip {
+    padding: 10px 12px; border-radius: 8px;
+    background: rgba(0,0,0,0.3); border: 1px solid #1E293B;
+  }
+  .tip-title { font-size: 12px; font-weight: 700; color: #E2E8F0; margin-bottom: 2px; }
+  .tip-detail { font-size: 11px; color: #64748B; }
+
+  .footer { text-align: center; margin-top: 24px; padding-bottom: 16px; }
+  .footer-main { font-size: 11px; letter-spacing: 2px; color: #334155; }
+  .footer-sub { font-size: 10px; color: #1E293B; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="header">
+  <div class="eyebrow">SISTEMA COMPLETO</div>
+  <h1>DROPSHIPPING CON DROPI</h1>
+  <div class="subtitle">ARGENTINA · GUÍA ESTRUCTURAL</div>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="content">
+  <div class="section-label">▼ FASES DEL NEGOCIO — CLICK PARA EXPANDIR ▼</div>
+  <div id="phases"></div>
+
+  <div class="flow-section">
+    <div class="flow-header" id="flow-header" onclick="toggleFlow()">
+      <span style="font-size:20px;">💸</span>
+      <div style="flex:1;">
+        <div class="flow-tag">MODELO</div>
+        <div class="flow-title">FLUJO DE DINERO Y OPERACIÓN</div>
+      </div>
+      <div class="flow-chevron" id="flow-chevron">▼</div>
+    </div>
+    <div class="flow-body" id="flow-body">
+      <div class="flow-visual" id="flow-visual"></div>
+      <div class="profit-box">
+        <div class="profit-label">TU GANANCIA POR VENTA</div>
+        <div class="profit-formula">Precio de Venta <span style="color:#94A3B8;">−</span> Precio Dropi <span style="color:#94A3B8;">−</span> Publicidad <span style="color:#10B981;">=</span> <span style="color:#FBBF24;">PROFIT 💸</span></div>
+        <div class="profit-note">Sin stock · Sin logística · Sin local obligatorio</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tips-section">
+    <div class="tips-title">💡 TIPS CLAVE PARA ARGENTINA</div>
+    <div class="tips-grid" id="tips"></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-main">MARKET SABORES · @market_sabores · CIPOLLETTI, NEUQUÉN</div>
+    <div class="footer-sub">ESTRUCTURA DROPSHIPPING × DROPI.CO × 2025</div>
+  </div>
+</div>
+
+<script>
+const data = {
+  phases: [
+    {
+      id: 1, phase: "FASE 1", title: "CONFIGURACIÓN", color: "#00E5FF", icon: "⚙️",
+      steps: [
+        { icon: "🔗", label: "Crear cuenta en Dropi.co", detail: "Registro gratuito como dropshipper" },
+        { icon: "🏪", label: "Crear tu tienda online", detail: "Tienda Nube, WooCommerce o Shopify" },
+        { icon: "💳", label: "Configurar pagos", detail: "Mercado Pago / transferencia bancaria" },
+        { icon: "📦", label: "Conectar Dropi a tu tienda", detail: "Importar productos con 1 clic" },
+      ]
+    },
+    {
+      id: 2, phase: "FASE 2", title: "SELECCIÓN DE PRODUCTOS", color: "#FF6B35", icon: "🎯",
+      steps: [
+        { icon: "🔍", label: "Investigar nichos rentables", detail: "Belleza, hogar, tech, fitness" },
+        { icon: "📊", label: "Analizar márgenes", detail: "Apuntar a 40-60% de ganancia" },
+        { icon: "⭐", label: "Elegir productos con buenas reseñas", detail: "+4 estrellas en Dropi" },
+        { icon: "🏷️", label: "Fijar precios competitivos", detail: "Considerar costos de envío y fees" },
+      ]
+    },
+    {
+      id: 3, phase: "FASE 3", title: "MARKETING & VENTAS", color: "#A855F7", icon: "📣",
+      steps: [
+        { icon: "📱", label: "Instagram & TikTok orgánico", detail: "Reels de producto, unboxings, reviews" },
+        { icon: "🎯", label: "Meta Ads (Facebook/Instagram)", detail: "Presupuesto inicial: $5-10 USD/día" },
+        { icon: "🤳", label: "Marketing de influencers", detail: "Microinfluencers locales (5K-50K)" },
+        { icon: "💬", label: "WhatsApp Business", detail: "Atención al cliente + catálogo" },
+      ]
+    },
+    {
+      id: 4, phase: "FASE 4", title: "OPERACIÓN", color: "#10B981", icon: "🔄",
+      steps: [
+        { icon: "🛒", label: "Cliente hace el pedido", detail: "En tu tienda online o redes sociales" },
+        { icon: "💰", label: "Cobras al cliente", detail: "Precio de venta con tu margen incluido" },
+        { icon: "📤", label: "Haces el pedido en Dropi", detail: "Pagas el precio de dropshipper" },
+        { icon: "🚚", label: "Dropi envía directo al cliente", detail: "Sin pasar por vos, sin stock" },
+      ]
+    },
+    {
+      id: 5, phase: "FASE 5", title: "ESCALADO", color: "#F59E0B", icon: "🚀",
+      steps: [
+        { icon: "📈", label: "Optimizar anuncios ganadores", detail: "Escalar presupuesto en lo que funciona" },
+        { icon: "🔁", label: "Email marketing & retargeting", detail: "Recuperar carritos abandonados" },
+        { icon: "🌟", label: "Programa de referidos", detail: "Clientes existentes traen nuevos" },
+        { icon: "🏢", label: "Considerar local físico", detail: "Mostrar productos + pick-up point" },
+      ]
+    },
+  ],
+  numeros: [
+    { label: "Margen promedio", value: "40-60%", color: "#10B981" },
+    { label: "Inversión inicial", value: "$0 stock", color: "#00E5FF" },
+    { label: "Tiempo setup", value: "1-3 días", color: "#A855F7" },
+    { label: "Envío en AR", value: "3-7 días", color: "#FF6B35" },
+  ],
+  flowBoxes: [
+    { label: "CLIENTE", sub: "Compra en tu tienda", color: "#A855F7", icon: "👤" },
+    { label: "→", sub: "", color: "#475569", icon: "" },
+    { label: "VOS COBRÁS", sub: "Precio de venta", color: "#10B981", icon: "💰" },
+    { label: "→", sub: "", color: "#475569", icon: "" },
+    { label: "DROPI", sub: "Pagás precio dropshipper", color: "#00E5FF", icon: "📦" },
+    { label: "→", sub: "", color: "#475569", icon: "" },
+    { label: "CLIENTE", sub: "Recibe el producto", color: "#F59E0B", icon: "🏠" },
+  ],
+  tips: [
+    { tip: "Usá Tienda Nube AR", detail: "Plataforma local, integra bien con MP" },
+    { tip: "Mercado Pago primero", detail: "Mayor conversión en Argentina" },
+    { tip: "Precios en pesos", detail: "Actualizá seguido por inflación" },
+    { tip: "Nichos de cultura asiática", detail: "Tu ventaja diferencial con Market Sabores" },
+    { tip: "WhatsApp como canal", detail: "80% de argentinos lo usa para comprar" },
+    { tip: "Reels sin stock", detail: "Mostrá productos antes de tenerlos" },
+  ]
+};
+
+let activePhase = null;
+let showFlow = false;
+
+function render() {
+  // KPIs
+  const kpisEl = document.getElementById('kpis');
+  kpisEl.innerHTML = data.numeros.map(n => `
+    <div class="kpi" style="border:1px solid ${n.color}33; box-shadow:0 0 15px ${n.color}15;">
+      <div class="kpi-value" style="color:${n.color};">${n.value}</div>
+      <div class="kpi-label">${n.label}</div>
+    </div>
+  `).join('');
+
+  // Phases
+  const phasesEl = document.getElementById('phases');
+  phasesEl.innerHTML = data.phases.map(phase => {
+    const isOpen = activePhase === phase.id;
+    return `
+      <div class="phase">
+        <div class="phase-header ${isOpen ? 'open' : ''}"
+             style="background:${isOpen ? phase.color + '18' : 'rgba(255,255,255,0.03)'}; border-color:${isOpen ? phase.color : '#1E293B'}; ${isOpen ? `box-shadow:0 0 20px ${phase.color}25;` : ''}"
+             onclick="togglePhase(${phase.id})">
+          <span class="phase-icon">${phase.icon}</span>
+          <div class="phase-text">
+            <div class="phase-tag" style="color:${phase.color};">${phase.phase}</div>
+            <div class="phase-title">${phase.title}</div>
+          </div>
+          <div class="phase-chevron ${isOpen ? 'open' : ''}" style="border:1px solid ${phase.color}66; color:${phase.color};">▼</div>
+        </div>
+        <div class="phase-body ${isOpen ? 'open' : ''}" style="border:1px solid ${phase.color}; background:${phase.color}08;">
+          <div class="steps-grid">
+            ${phase.steps.map(step => `
+              <div class="step" style="border:1px solid ${phase.color}22;">
+                <div class="step-icon" style="background:${phase.color}20;">${step.icon}</div>
+                <div>
+                  <div class="step-label">${step.label}</div>
+                  <div class="step-detail">${step.detail}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Flow toggle state
+  document.getElementById('flow-header').classList.toggle('open', showFlow);
+  document.getElementById('flow-chevron').classList.toggle('open', showFlow);
+  document.getElementById('flow-body').classList.toggle('open', showFlow);
+
+  // Flow visual
+  const flowVisualEl = document.getElementById('flow-visual');
+  flowVisualEl.innerHTML = data.flowBoxes.map(item => {
+    if (item.label === '→') {
+      return `<div class="flow-arrow">→</div>`;
+    }
+    return `
+      <div class="flow-box" style="background:${item.color}15; border:1px solid ${item.color}44;">
+        <div class="flow-box-icon">${item.icon}</div>
+        <div class="flow-box-label" style="color:${item.color};">${item.label}</div>
+        <div class="flow-box-sub">${item.sub}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Tips
+  const tipsEl = document.getElementById('tips');
+  tipsEl.innerHTML = data.tips.map(item => `
+    <div class="tip">
+      <div class="tip-title">✦ ${item.tip}</div>
+      <div class="tip-detail">${item.detail}</div>
+    </div>
+  `).join('');
+}
+
+function togglePhase(id) {
+  activePhase = activePhase === id ? null : id;
+  render();
+}
+
+function toggleFlow() {
+  showFlow = !showFlow;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
