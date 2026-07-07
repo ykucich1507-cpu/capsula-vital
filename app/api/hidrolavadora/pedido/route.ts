@@ -57,9 +57,11 @@ export async function POST(request: NextRequest) {
       await saveLead({ nombre, telefono })
     } catch {}
 
+    // Sin email no hay registro durable del pedido (/tmp es efímero en Vercel):
+    // fallar visible para que el cliente reintente o use WhatsApp.
     const resendKey = process.env.RESEND_API_KEY
     if (!resendKey) {
-      return NextResponse.json({ ok: true, warning: 'RESEND_API_KEY no configurada — pedido guardado sin email' })
+      return NextResponse.json({ error: 'RESEND_API_KEY no configurada — no se puede registrar el pedido' }, { status: 503 })
     }
 
     const waPhone = telefono.replace(/\D/g, '')

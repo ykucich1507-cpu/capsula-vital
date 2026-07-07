@@ -6,6 +6,14 @@ import { Resend } from 'resend'
 const LEADS_FILE = '/tmp/yanitrend-leads.json'
 const REPORT_EMAIL = 'ykucich1507@gmail.com'
 
+// GET y PATCH exponen datos personales de clientes: requieren ADMIN_KEY.
+// Si la variable no está configurada, se deniega el acceso (nunca abierto por defecto).
+function isAuthorized(request: NextRequest): boolean {
+  const adminKey = process.env.ADMIN_KEY
+  if (!adminKey) return false
+  return request.headers.get('authorization') === `Bearer ${adminKey}`
+}
+
 export interface Lead {
   id: string
   name: string
@@ -30,7 +38,10 @@ async function writeLeads(leads: Lead[]): Promise<void> {
   await fs.writeFile(LEADS_FILE, JSON.stringify(leads, null, 2))
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const leads = await readLeads()
   return NextResponse.json({ leads, total: leads.length })
 }
@@ -99,6 +110,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const { id, status } = await request.json()
     const leads = await readLeads()

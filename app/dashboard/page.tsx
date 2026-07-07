@@ -39,31 +39,83 @@ function kpiCard(label: string, value: string | number, sub?: string, color = '#
   )
 }
 
+const ADMIN_KEY_STORAGE = 'yani-admin-key'
+
 export default function Dashboard() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [selected, setSelected] = useState<Lead | null>(null)
   const [filter, setFilter] = useState<Lead['status'] | 'todos'>('todos')
   const [loading, setLoading] = useState(true)
+  const [adminKey, setAdminKey] = useState<string | null>(null)
+  const [keyInput, setKeyInput] = useState('')
+  const [authFailed, setAuthFailed] = useState(false)
+
+  useEffect(() => {
+    setAdminKey(localStorage.getItem(ADMIN_KEY_STORAGE) || '')
+  }, [])
 
   const fetchLeads = useCallback(async () => {
+    if (!adminKey) { setLoading(false); return }
+    setLoading(true)
     try {
-      const res = await fetch('/api/funnel/leads')
+      const res = await fetch('/api/funnel/leads', {
+        headers: { 'Authorization': `Bearer ${adminKey}` },
+      })
+      if (res.status === 401) {
+        setAuthFailed(true)
+        setLeads([])
+        setLoading(false)
+        return
+      }
       const data = await res.json()
+      setAuthFailed(false)
       setLeads(data.leads || [])
     } catch {}
     setLoading(false)
-  }, [])
+  }, [adminKey])
 
-  useEffect(() => { fetchLeads() }, [fetchLeads])
+  useEffect(() => { if (adminKey !== null) fetchLeads() }, [adminKey, fetchLeads])
+
+  function submitKey(e: React.FormEvent) {
+    e.preventDefault()
+    const key = keyInput.trim()
+    if (!key) return
+    localStorage.setItem(ADMIN_KEY_STORAGE, key)
+    setAuthFailed(false)
+    setAdminKey(key)
+  }
 
   async function updateStatus(id: string, status: Lead['status']) {
     await fetch('/api/funnel/leads', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminKey}` },
       body: JSON.stringify({ id, status }),
     })
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l))
     if (selected?.id === id) setSelected(prev => prev ? { ...prev, status } : null)
+  }
+
+  if (adminKey !== null && (!adminKey || authFailed)) {
+    return (
+      <div style={{ fontFamily: "'Poppins', sans-serif", background: '#F3E9DF', minHeight: '100vh', color: '#2B2B2B', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+        <form onSubmit={submitKey} style={{ background: '#fff', borderRadius: 16, padding: '32px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', width: '100%', maxWidth: 360 }}>
+          <h1 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 800 }}>🔒 Dashboard Yani Trend</h1>
+          <p style={{ margin: '0 0 20px', fontSize: 13, color: '#888' }}>
+            {authFailed ? 'Clave incorrecta. Probá de nuevo.' : 'Ingresá la clave de acceso para ver los leads.'}
+          </p>
+          <input
+            type="password"
+            value={keyInput}
+            onChange={e => setKeyInput(e.target.value)}
+            placeholder="Clave de acceso"
+            style={{ width: '100%', boxSizing: 'border-box', border: '1.5px solid #e0e0e0', borderRadius: 10, padding: '12px 14px', fontSize: 14, outline: 'none', fontFamily: 'inherit', marginBottom: 12 }}
+          />
+          <button type="submit" style={{ width: '100%', background: '#E6007E', color: '#fff', border: 'none', borderRadius: 10, padding: '12px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            Entrar
+          </button>
+        </form>
+      </div>
+    )
   }
 
   const today = new Date().toDateString()
