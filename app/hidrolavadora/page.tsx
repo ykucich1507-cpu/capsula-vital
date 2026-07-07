@@ -4,15 +4,14 @@ import { useEffect, useState } from 'react'
 
 const PRODUCT = {
   name: 'Hidrolavadora Inalámbrica a Batería',
-  price: 128000,
-  originalPrice: 168000,
-  // TODO: confirmar % real de gasto en Meta Ads para recalcular el precio final (margen objetivo: 40%)
+  price: 51500,
+  originalPrice: 68000,
 }
 
 // TODO: reemplazar por el número real de WhatsApp de Yani Trend
 const WHATSAPP_NUMBER = '5493400000000'
-// TODO: confirmar la URL real del producto en Shopify (yanitrend.com)
-const CHECKOUT_URL = 'https://yanitrend.com/collections/all'
+// Los CTAs internos scrollean al formulario de pedido
+const CHECKOUT_URL = '#pedido'
 
 function whatsappLink(message: string) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
@@ -63,6 +62,28 @@ function formatPrice(n: number) {
 
 export default function HidrolavadoraPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
+  const [form, setForm] = useState({ nombre: '', telefono: '', direccion: '', ciudad: '', cp: '', cantidad: '1' })
+  const [formState, setFormState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  function setField(field: string, value: string) {
+    setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function submitPedido(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.nombre.trim() || !form.telefono.trim() || formState === 'sending') return
+    setFormState('sending')
+    try {
+      const res = await fetch('/api/hidrolavadora/pedido', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      setFormState(res.ok ? 'sent' : 'error')
+    } catch {
+      setFormState('error')
+    }
+  }
 
   useEffect(() => {
     const script = document.createElement('script')
@@ -78,7 +99,7 @@ export default function HidrolavadoraPage() {
   useEffect(() => {
     // @ts-ignore
     if (window.lucide) window.lucide.createIcons()
-  }, [openFaq])
+  }, [openFaq, formState])
 
   const discount = Math.round((1 - PRODUCT.price / PRODUCT.originalPrice) * 100)
 
@@ -192,6 +213,23 @@ export default function HidrolavadoraPage() {
         .oferta-guarantee { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--carbon-70); margin-top: 16px; line-height: 0; }
         .oferta-guarantee span { line-height: 1.4; }
 
+        .pedido { padding: 88px 0; }
+        .pedido-card { max-width: 560px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 40px 36px; box-shadow: var(--shadow-lg); }
+        .pedido-form { display: flex; flex-direction: column; gap: 16px; }
+        .pedido-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .field label { display: block; font-size: 13px; font-weight: 600; color: var(--carbon); margin-bottom: 6px; }
+        .field label .req { color: var(--fucsia); }
+        .field input, .field select { width: 100%; font-family: var(--font); font-size: 15px; color: var(--carbon); background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 13px 16px; outline: none; transition: border-color var(--dur); }
+        .field input:focus, .field select:focus { border-color: var(--fucsia); }
+        .pedido-form .btn { justify-content: center; width: 100%; }
+        .pedido-note { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: var(--carbon-70); line-height: 0; }
+        .pedido-note span { line-height: 1.4; }
+        .pedido-error { background: #FDECEC; color: #C0392B; font-size: 14px; font-weight: 600; border-radius: 12px; padding: 12px 16px; text-align: center; }
+        .pedido-ok { text-align: center; padding: 24px 0; }
+        .pedido-ok-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--fucsia-soft); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; line-height: 0; }
+        .pedido-ok h3 { font-size: 24px; font-weight: 700; color: var(--carbon); margin: 0 0 10px; }
+        .pedido-ok p { font-size: 15px; line-height: 1.65; color: var(--carbon-70); margin: 0; }
+
         .faq { padding: 88px 0 110px; }
         .faq-list { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
         .faq-item { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #fff; }
@@ -244,6 +282,8 @@ export default function HidrolavadoraPage() {
           .cta-ban-inner h2 { font-size: 30px; }
           .sticky-price .was { display: none; }
           .sticky-bar-inner { padding: 12px 16px; }
+          .pedido-card { padding: 28px 20px; }
+          .pedido-row { grid-template-columns: 1fr; }
         }
       `}</style>
 
@@ -287,7 +327,7 @@ export default function HidrolavadoraPage() {
                 </a>
                 <div className="hero-trust">
                   <span><i data-lucide="wallet" style={{ width: 15, height: 15, color: 'var(--fucsia)' }}></i> Pagás al recibir</span>
-                  <span><i data-lucide="truck" style={{ width: 15, height: 15, color: 'var(--fucsia)' }}></i> Envío gratis</span>
+                  <span><i data-lucide="truck" style={{ width: 15, height: 15, color: 'var(--fucsia)' }}></i> Envío a todo el país</span>
                   <span><i data-lucide="shield-check" style={{ width: 15, height: 15, color: 'var(--fucsia)' }}></i> Garantía 30 días</span>
                 </div>
               </div>
@@ -419,7 +459,7 @@ export default function HidrolavadoraPage() {
                   '1 Hidrolavadora inalámbrica',
                   '1 Batería recargable + cargador',
                   '2 Boquillas intercambiables (TODO: confirmar combo real)',
-                  'Envío gratis a todo el país',
+                  'Envío a todo el país (costo de envío a cargo del comprador)',
                 ].map((item) => (
                   <li key={item}>
                     <i data-lucide="check-circle" style={{ width: 16, height: 16, color: 'var(--fucsia)' }}></i>
@@ -441,6 +481,71 @@ export default function HidrolavadoraPage() {
                 <span>Garantía 30 días · Revisás el paquete antes de pagar</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FORMULARIO DE PEDIDO */}
+      <section className="pedido" id="pedido">
+        <div className="wrap">
+          <div className="sec-hdr">
+            <div className="eye">Pedila ahora</div>
+            <h2>Completá tus datos y pagá al recibir</h2>
+            <p>Sin tarjetas ni adelantos. Te contactamos por WhatsApp para confirmar la entrega.</p>
+          </div>
+          <div className="pedido-card">
+            {formState === 'sent' ? (
+              <div className="pedido-ok">
+                <div className="pedido-ok-icon">
+                  <i data-lucide="check-circle" style={{ width: 30, height: 30, color: 'var(--fucsia)' }}></i>
+                </div>
+                <h3>¡Pedido recibido!</h3>
+                <p>Gracias {form.nombre.trim()}. En breve te escribimos por WhatsApp para confirmar tu dirección y coordinar la entrega. Recordá: pagás cuando recibís el paquete.</p>
+              </div>
+            ) : (
+              <form className="pedido-form" onSubmit={submitPedido}>
+                <div className="field">
+                  <label>Nombre y apellido <span className="req">*</span></label>
+                  <input type="text" required value={form.nombre} onChange={(e) => setField('nombre', e.target.value)} placeholder="Ej: María González" />
+                </div>
+                <div className="field">
+                  <label>Teléfono / WhatsApp <span className="req">*</span></label>
+                  <input type="tel" required value={form.telefono} onChange={(e) => setField('telefono', e.target.value)} placeholder="Ej: 11 1234 5678" />
+                </div>
+                <div className="field">
+                  <label>Dirección de entrega</label>
+                  <input type="text" value={form.direccion} onChange={(e) => setField('direccion', e.target.value)} placeholder="Calle y número" />
+                </div>
+                <div className="pedido-row">
+                  <div className="field">
+                    <label>Ciudad / Provincia</label>
+                    <input type="text" value={form.ciudad} onChange={(e) => setField('ciudad', e.target.value)} placeholder="Ej: Rosario, Santa Fe" />
+                  </div>
+                  <div className="field">
+                    <label>Código postal</label>
+                    <input type="text" value={form.cp} onChange={(e) => setField('cp', e.target.value)} placeholder="Ej: 2000" />
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Cantidad</label>
+                  <select value={form.cantidad} onChange={(e) => setField('cantidad', e.target.value)}>
+                    <option value="1">1 unidad — {formatPrice(PRODUCT.price)}</option>
+                    <option value="2">2 unidades — {formatPrice(PRODUCT.price * 2)}</option>
+                    <option value="3">3 unidades — {formatPrice(PRODUCT.price * 3)}</option>
+                  </select>
+                </div>
+                {formState === 'error' && (
+                  <div className="pedido-error">No pudimos registrar tu pedido. Probá de nuevo o escribinos por WhatsApp.</div>
+                )}
+                <button type="submit" className="btn btn-primary btn-lg" disabled={formState === 'sending'}>
+                  {formState === 'sending' ? 'Enviando...' : 'Confirmar pedido · Pago al recibir'}
+                </button>
+                <div className="pedido-note">
+                  <i data-lucide="lock" style={{ width: 14, height: 14, color: 'var(--fucsia)' }}></i>
+                  <span>No te pedimos tarjeta ni ningún dato bancario</span>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </section>
