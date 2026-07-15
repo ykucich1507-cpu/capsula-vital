@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generador de Páginas de Producto — Yani Trend</title>
+<!-- ART-START -->
+<style>
+/* ============ CHROME DEL EDITOR ============ */
+:root{
+  --bg:#12141B; --panel:#191C24; --panel2:#20242E; --line:#2A2F3B;
+  --ink:#E9EBF2; --mut:#9096A6; --acc:#FFC53D; --acc-ink:#1A1503;
+  --ok:#5DD39E; --warn:#FF8A5C; --radius:10px;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{font:inherit;color:inherit}
+::selection{background:#FFC53D44}
+
+.topbar{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:40}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.01em}
+.logo-mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#FFC53D,#FF8A5C);display:grid;place-items:center;color:#1A1503;font-weight:800;font-size:13px}
+.logo small{display:block;font-weight:500;color:var(--mut);font-size:11px;letter-spacing:.02em}
+.topbar .spacer{flex:1}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{padding:6px 14px;color:var(--mut);font-size:13px}
+.seg button.on{background:var(--acc);color:var(--acc-ink);font-weight:600}
+.btn{padding:8px 16px;border-radius:8px;font-weight:600;font-size:13px;border:1px solid var(--line);background:var(--panel2);transition:filter .15s}
+.btn:hover{filter:brightness(1.15)}
+.btn.primary{background:var(--acc);color:var(--acc-ink);border-color:transparent}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.5;cursor:wait}
+
+.app{display:grid;grid-template-columns:340px 1fr;height:calc(100vh - 53px)}
+@media (max-width:900px){.app{grid-template-columns:1fr;height:auto}.canvas{min-height:70vh}}
+
+/* -------- panel lateral -------- */
+.side{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;padding:18px 16px 60px}
+.side h3{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);margin:22px 0 10px;font-weight:600}
+.side h3:first-child{margin-top:0}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:12px;color:var(--mut);margin-bottom:5px}
+.field input,.field textarea,.field select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--ink);font-size:13px}
+.field textarea{resize:vertical;min-height:74px}
+.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid #FFC53D66;outline-offset:1px}
+.hint{font-size:11.5px;color:var(--mut);margin-top:6px;line-height:1.45}
+.gen-row{display:flex;gap:8px;margin-top:10px}
+.gen-row .btn{flex:1;padding:10px}
+.ai-note{font-size:11.5px;line-height:1.5;margin-top:10px;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--mut)}
+.ai-note.ok{border-color:#5DD39E55;color:#9fe2c4}
+.ai-note.off{border-color:#FF8A5C55;color:#ffc4a8}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-size:12.5px;color:var(--mut)}
+.chip.on{background:var(--acc);color:var(--acc-ink);border-color:transparent;font-weight:600}
+
+.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.swatch{border:2px solid var(--line);border-radius:9px;padding:6px;display:flex;flex-direction:column;gap:5px;align-items:stretch;background:var(--panel2)}
+.swatch.on{border-color:var(--acc)}
+.swatch .dots{display:flex;height:22px;border-radius:5px;overflow:hidden}
+.swatch .dots i{flex:1}
+.swatch span{font-size:10.5px;color:var(--mut);text-align:center}
+.swatch.on span{color:var(--ink)}
+
+.seclist{display:flex;flex-direction:column;gap:6px}
+.secitem{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);user-select:none}
+.secitem.dragging{opacity:.4}
+.secitem.dragover{border-color:var(--acc)}
+.secitem .grip{cursor:grab;color:var(--mut);font-size:15px;letter-spacing:2px}
+.secitem .name{flex:1;font-size:13px}
+.secitem.off .name{color:var(--mut);text-decoration:line-through}
+.sw{width:32px;height:18px;border-radius:999px;background:var(--line);position:relative;transition:background .15s;flex:none}
+.sw::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .15s}
+.sw.on{background:var(--ok)}
+.sw.on::after{left:16px}
+
+.imgslots{display:flex;flex-direction:column;gap:8px}
+.imgslot{display:flex;align-items:center;gap:10px;border:1px dashed var(--line);border-radius:9px;padding:8px 10px}
+.imgslot .thumb{width:44px;height:44px;border-radius:7px;background:var(--panel2);background-size:cover;background-position:center;display:grid;place-items:center;color:var(--mut);font-size:17px;flex:none}
+.imgslot .meta{flex:1;min-width:0}
+.imgslot .meta b{display:block;font-size:12.5px;font-weight:600}
+.imgslot .meta span{font-size:11px;color:var(--mut)}
+.imgslot .acts{display:flex;gap:6px}
+.mini{padding:4px 9px;font-size:11.5px;border-radius:6px;border:1px solid var(--line);background:var(--panel2)}
+.mini:hover{filter:brightness(1.2)}
+
+/* -------- lienzo -------- */
+.canvas{overflow:auto;background:
+  radial-gradient(1200px 500px at 70% -10%, #FFC53D0C, transparent),
+  var(--bg);padding:26px;display:flex;justify-content:center;align-items:flex-start}
+.frame{width:100%;max-width:1060px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 24px 70px -20px rgba(0,0,0,.65);transition:max-width .25s}
+.frame.mobile{max-width:392px}
+.empty{color:var(--mut);text-align:center;padding:120px 30px;max-width:420px}
+.empty .big{font-size:40px;margin-bottom:14px}
+.empty h2{color:var(--ink);font-size:19px;margin-bottom:8px;letter-spacing:-.01em}
+.empty p{font-size:13.5px;line-height:1.6}
+
+[contenteditable]{outline:none;border-radius:3px}
+[contenteditable]:hover{box-shadow:0 0 0 1.5px #FFC53D88}
+[contenteditable]:focus{box-shadow:0 0 0 2px #FFC53D}
+
+/* -------- modales / toast -------- */
+.overlay{position:fixed;inset:0;background:rgba(8,9,13,.72);display:none;place-items:center;z-index:60;padding:20px}
+.overlay.open{display:grid}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:620px;width:100%;max-height:82vh;overflow-y:auto;padding:22px}
+.modal h2{font-size:16px;margin-bottom:6px;letter-spacing:-.01em}
+.modal .sub{color:var(--mut);font-size:12.5px;margin-bottom:16px}
+.promptcard{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel2)}
+.promptcard b{font-size:12px;color:var(--acc);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em}
+.promptcard p{font-size:12.5px;color:var(--ink);font-family:var(--mono);line-height:1.55;margin-bottom:9px;word-break:break-word}
+.modal .close-row{display:flex;justify-content:flex-end;margin-top:6px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,80px);background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:10px 18px;border-radius:10px;font-size:13px;transition:transform .25s;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#toast.show{transform:translate(-50%,0)}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--acc-ink);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-mark">YT</div>
+    <div>Generador de Páginas de Producto<small>Yani Trend · IA + exportación HTML</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="seg" role="group" aria-label="Vista previa">
+    <button id="vDesk" class="on" onclick="setDevice('desk')">🖥 Escritorio</button>
+    <button id="vMob" onclick="setDevice('mob')">📱 Móvil</button>
+  </div>
+  <button class="btn ghost" onclick="copyHTML()">Copiar HTML</button>
+  <button class="btn primary" onclick="exportHTML()">⬇ Exportar HTML</button>
+</header>
+
+<div class="app">
+<aside class="side">
+  <h3>1 · Producto</h3>
+  <div class="field">
+    <label for="inpProduct">Link o nombre / descripción del producto</label>
+    <textarea id="inpProduct" placeholder="Ej.: https://es.aliexpress.com/item/... &#10;o &#10;Vaso térmico inteligente con sensor de temperatura LED, 500 ml, acero inoxidable"></textarea>
+    <p class="hint">Podés pegar un link de AliExpress, Amazon o Shein — el nombre se extrae de la URL — o directamente escribir qué vendés. Cuanto más detalle, mejor copy.</p>
+  </div>
+  <div class="field" style="display:flex;gap:8px">
+    <div style="flex:1"><label for="inpPrice">Precio (ARS)</label><input id="inpPrice" type="text" placeholder="24.999" inputmode="numeric"></div>
+    <div style="flex:1"><label for="inpOld">Precio tachado</label><input id="inpOld" type="text" placeholder="39.999" inputmode="numeric"></div>
+  </div>
+  <div class="gen-row">
+    <button class="btn primary" id="btnGen" onclick="generate()">✨ Generar página</button>
+  </div>
+  <div class="ai-note" id="aiNote">Detectando IA de Claude…</div>
+
+  <h3>2 · Tono</h3>
+  <div class="chips" id="toneChips"></div>
+
+  <h3>3 · Paleta</h3>
+  <div class="swatches" id="swatches"></div>
+
+  <h3>4 · Secciones <span style="font-weight:400;text-transform:none;letter-spacing:0">— arrastrá para reordenar</span></h3>
+  <div class="seclist" id="seclist"></div>
+
+  <h3>5 · Imágenes</h3>
+  <div class="imgslots" id="imgslots"></div>
+  <button class="btn ghost" style="width:100%;margin-top:8px" onclick="openPrompts()">🎨 Prompts de imagen para IA</button>
+  <p class="hint">Subí fotos reales del producto (quedan incrustadas en el HTML exportado) o copiá los prompts para generarlas en Ideogram, Leonardo o Midjourney.</p>
+
+  <h3>6 · Contacto / Contra entrega</h3>
+  <div class="field">
+    <label for="inpWa">WhatsApp (con código de país, sin +)</label>
+    <input id="inpWa" type="text" placeholder="5491122334455" inputmode="numeric">
+  </div>
+  <div class="field" style="display:flex;align-items:center;gap:10px">
+    <div class="sw on" id="swCod" onclick="toggleCod()" role="switch" aria-checked="true" tabindex="0"></div>
+    <label style="margin:0;color:var(--ink)">Formulario de pedido contra entrega</label>
+  </div>
+
+  <div style="margin-top:26px;display:flex;gap:8px">
+    <button class="btn ghost" style="flex:1" onclick="resetAll()">Reiniciar todo</button>
+  </div>
+</aside>
+
+<main class="canvas">
+  <div class="frame" id="frame">
+    <div class="empty" id="emptyState">
+      <div class="big">🛍️</div>
+      <h2>Tu página de producto aparece acá</h2>
+      <p>Pegá un link o describí tu producto en el panel izquierdo y tocá <b>Generar página</b>. Después editás cualquier texto haciendo clic encima, reordenás secciones arrastrándolas y exportás el HTML final.</p>
+    </div>
+    <div id="preview"></div>
+  </div>
+</main>
+</div>
+
+<div class="overlay" id="promptModal" role="dialog" aria-modal="true" aria-label="Prompts de imagen">
+  <div class="modal">
+    <h2>🎨 Prompts de imagen listos para copiar</h2>
+    <p class="sub">Pegalos en Ideogram, Leonardo.ai (gratis) o Midjourney. Están en inglés porque esos modelos rinden mejor así.</p>
+    <div id="promptList"></div>
+    <div class="close-row"><button class="btn" onclick="closePrompts()">Cerrar</button></div>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   ESTADO
+================================================================ */
+const SECTION_META = {
+  hero:     {name:"Hero + CTA"},
+  desc:     {name:"Descripción"},
+  benefits: {name:"Beneficios"},
+  social:   {name:"Testimonios"},
+  offer:    {name:"Oferta + urgencia"},
+  faq:      {name:"Preguntas frecuentes"},
+  cta:      {name:"CTA final / pedido"}
+};
+const PALETTES = {
+  fuego:   {name:"Fuego",   bg:"#FFFFFF", surface:"#FFF4EE", ink:"#1E1410", mut:"#7A6A61", acc:"#E8492A", acc2:"#1E1410", accInk:"#FFFFFF"},
+  oceano:  {name:"Océano",  bg:"#F7FAFC", surface:"#E9F2F8", ink:"#122536", mut:"#5B7286", acc:"#0E6BA8", acc2:"#0A3552", accInk:"#FFFFFF"},
+  selva:   {name:"Selva",   bg:"#FAF9F4", surface:"#EEF0E4", ink:"#1C2418", mut:"#66705C", acc:"#2E6B3E", acc2:"#C99B3F", accInk:"#FFFFFF"},
+  noche:   {name:"Noche",   bg:"#101216", surface:"#1A1D24", ink:"#F2EFE8", mut:"#9A96A8", acc:"#D8A94E", acc2:"#8E7CC3", accInk:"#171204"},
+  rosa:    {name:"Rosa",    bg:"#FFF9F7", surface:"#FBEAE4", ink:"#3A2229", mut:"#8A6B70", acc:"#C4485E", acc2:"#8A3348", accInk:"#FFFFFF"},
+  minimal: {name:"Minimal", bg:"#FFFFFF", surface:"#F3F3F1", ink:"#161616", mut:"#767672", acc:"#161616", acc2:"#5A5A56", accInk:"#FFFFFF"}
+};
+const TONES = {
+  urgente:    {name:"⚡ Urgente"},
+  premium:    {name:"◆ Premium"},
+  minimalista:{name:"○ Minimalista"}
+};
+const IMG_SLOTS = [
+  {key:"hero", label:"Imagen principal", desc:"Foto grande del hero"},
+  {key:"g1",   label:"Galería 1", desc:"Producto en uso"},
+  {key:"g2",   label:"Galería 2", desc:"Detalle / beneficio"}
+];
+
+let model = null;
+let aiAvailable = false;
+
+function defaultModel(){
+  return {
+    product:{name:"", price:"", oldPrice:""},
+    hero:{badge:"", headline:"", sub:"", cta:"Lo quiero ahora"},
+    desc:{title:"", paragraphs:[]},
+    benefits:{title:"", items:[]},
+    social:{title:"", items:[]},
+    offer:{title:"", note:"", stock:7, hours:24, cta:"Aprovechar la oferta"},
+    faq:{title:"Preguntas frecuentes", items:[]},
+    cta:{title:"", sub:"", button:"Pedir por WhatsApp", codTitle:"Pedilo contra entrega", codBtn:"Enviar pedido"},
+    imagePrompts:[],
+    order:["hero","desc","benefits","social","offer","faq","cta"],
+    enabled:{hero:true,desc:true,benefits:true,social:true,offer:true,faq:true,cta:true},
+    palette:"fuego", tone:"urgente",
+    images:{hero:null,g1:null,g2:null},
+    whatsapp:"", cod:true, device:"desk"
+  };
+}
+
+/* ================================================================
+   UTILIDADES
+================================================================ */
+const $ = s => document.querySelector(s);
+function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2600);}
+function fmtPrice(v){
+  const n=String(v||"").replace(/[^\d]/g,"");
+  if(!n) return "";
+  return "$ "+Number(n).toLocaleString("es-AR");
+}
+function save(){ try{ localStorage.setItem("yt-pagegen", JSON.stringify(model)); }catch(e){/* cuota llena: seguimos sin persistir */} }
+function getPath(obj,path){ return path.split(".").reduce((o,k)=>o?.[k], obj); }
+function setPath(obj,path,val){
+  const keys=path.split("."); const last=keys.pop();
+  const target=keys.reduce((o,k)=>o[k], obj);
+  if(target) target[last]=val;
+}
+
+/* Extrae un nombre legible de una URL de AliExpress / Amazon / Shein / MercadoLibre */
+function parseInput(raw){
+  raw=(raw||"").trim();
+  if(!/^https?:\/\//i.test(raw)) return {name:raw, fromUrl:false};
+  try{
+    const u=new URL(raw);
+    let slug="";
+    const path=decodeURIComponent(u.pathname);
+    const mAmz=path.match(/\/([^\/]+)\/dp\//i);           // amazon: /Nombre-Del-Producto/dp/ASIN
+    const mMl=path.match(/\/(?:MLA-?\d+-)?([a-z0-9\-]{10,})/i);
+    if(mAmz) slug=mAmz[1];
+    else if(u.hostname.includes("aliexpress")) slug=(path.match(/\/item\/(?:[\d\.]+\/)?(.+?)\.html/i)||[])[1]||"";
+    else if(u.hostname.includes("shein")) slug=(path.match(/\/([a-z0-9\-]+)-p-\d+/i)||[])[1]||"";
+    else if(mMl) slug=mMl[1];
+    slug=slug.replace(/\.html?$/i,"").replace(/[-_+]/g," ").replace(/\b\d{6,}\b/g,"").replace(/\s+/g," ").trim();
+    return {name: slug || u.hostname.replace("www.",""), fromUrl:true, url:raw};
+  }catch(e){ return {name:raw, fromUrl:false}; }
+}
+
+/* ================================================================
+   GENERACIÓN — IA de Claude si está disponible, plantilla si no
+================================================================ */
+function detectAI(){
+  aiAvailable = !!(window.claude && typeof window.claude.complete==="function");
+  const n=$("#aiNote");
+  if(aiAvailable){ n.className="ai-note ok"; n.innerHTML="✅ <b>IA de Claude conectada.</b> El copy se genera con IA según tu producto y el tono elegido."; }
+  else { n.className="ai-note off"; n.innerHTML="⚠️ La IA de Claude no está disponible en este entorno — se usa el <b>motor de plantillas inteligente</b> (igual genera toda la página y la editás a mano). Si abrís esta app como artifact en claude.ai, la IA se activa sola."; }
+}
+
+function aiPrompt(info, tone){
+  return `Sos un experto en copywriting de respuesta directa para e-commerce con pago contra entrega en Argentina. Escribí SIEMPRE en español rioplatense con voseo (vos, tenés, pedí).
+
+PRODUCTO: ${info.name}
+${info.url ? "URL DE REFERENCIA: "+info.url : ""}
+TONO PEDIDO: ${tone} ${tone==="urgente"?"(escasez, hoy, ya, directo)":tone==="premium"?"(elegante, calidad, confianza, sin gritar)":"(sobrio, claro, sin adornos)"}
+
+Investigá mentalmente qué es este producto, para quién es y qué problema resuelve. Generá el contenido de una página de venta completa.
+
+Respondé SOLO con un JSON válido, sin markdown ni texto extra, con esta forma exacta:
+{
+ "productName": "nombre corto y vendedor del producto",
+ "hero": {"badge":"etiqueta corta (ej: ENVÍO GRATIS A TODO EL PAÍS)","headline":"titular de alto impacto, máx 12 palabras","sub":"subtítulo de 1-2 frases que amplía la promesa","cta":"texto del botón"},
+ "desc": {"title":"título de la sección","paragraphs":["párrafo 1 orientado a beneficios","párrafo 2"]},
+ "benefits": {"title":"título","items":[{"icon":"un emoji","title":"beneficio corto","text":"1 frase"}, …exactamente 6 items]},
+ "social": {"title":"título","items":[{"name":"nombre argentino","city":"ciudad argentina","stars":5,"text":"testimonio creíble de 1-3 frases"}, …exactamente 3]},
+ "offer": {"title":"título de la oferta","note":"frase de urgencia (stock/tiempo)","cta":"texto del botón"},
+ "faq": {"title":"Preguntas frecuentes","items":[{"q":"pregunta que resuelve una objeción real (pago contra entrega, envío, garantía, uso)","a":"respuesta corta y honesta"}, …exactamente 5]},
+ "cta": {"title":"llamado final","sub":"1 frase de cierre","button":"texto botón WhatsApp"},
+ "imagePrompts": ["3 prompts EN INGLÉS para generar fotos de producto en Ideogram/Midjourney: hero shot, lifestyle, detalle. Fotorrealistas, fondo limpio, luz de estudio"]
+}`;
+}
+
+async function aiGenerate(info, tone){
+  let txt = await window.claude.complete(aiPrompt(info, tone));
+  txt = txt.trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+  const start=txt.indexOf("{"), end=txt.lastIndexOf("}");
+  if(start<0||end<0) throw new Error("Respuesta sin JSON");
+  return JSON.parse(txt.slice(start,end+1));
+}
+
+/* Motor de plantillas: genera copy decente sin IA */
+function templateGenerate(info, tone){
+  const raw=info.name||"tu producto";
+  const name=raw.length>60 ? raw.slice(0,60).replace(/\s\S*$/,"") : raw;
+  const Name=name.charAt(0).toUpperCase()+name.slice(1);
+  const t={
+    urgente:{badge:"🔥 OFERTA POR TIEMPO LIMITADO — ENVÍO GRATIS", head:`${Name}: el que todos están pidiendo`, sub:`Pagás recién cuando lo tenés en la mano. Stock limitado y envío gratis a todo el país.`, cta:"¡Lo quiero ahora!", offerT:"Aprovechá antes de que se agote", note:"⏳ Quedan pocas unidades a este precio", offerCta:"Reservar el mío", ctaT:"No te quedes sin el tuyo", ctaS:"Pedilo hoy y pagalo cuando llega. Así de simple."},
+    premium:{badge:"Envío gratis · Pago contra entrega", head:`${Name}, calidad que se nota desde el primer uso`, sub:`Elegido por cientos de clientes en todo el país. Lo recibís en tu casa y pagás al recibirlo.`, cta:"Quiero el mío", offerT:"Precio de lanzamiento", note:"Oferta válida hasta agotar stock de esta partida", offerCta:"Acceder a la oferta", ctaT:"Dejá que la calidad hable por sí sola", ctaS:"Coordinamos la entrega por WhatsApp en menos de un minuto."},
+    minimalista:{badge:"Pago contra entrega", head:Name, sub:`Simple: lo pedís, te llega, lo pagás. Envíos a todo el país.`, cta:"Pedir ahora", offerT:"Precio actual", note:"Stock disponible de esta semana", offerCta:"Pedir ahora", ctaT:"¿Lo pedimos?", ctaS:"Un mensaje y queda coordinado."}
+  }[tone];
+  return {
+    productName:Name,
+    hero:{badge:t.badge, headline:t.head, sub:t.sub, cta:t.cta},
+    desc:{title:`Por qué ${name} se volvió tan pedido`, paragraphs:[
+      `${Name} llegó para resolver algo puntual: hacerte la vida más fácil todos los días. No es un capricho, es de esos productos que una vez que los probás no entendés cómo vivías sin ellos.`,
+      `Además, comprarlo es cero riesgo: lo pedís por WhatsApp, te lo llevamos a tu casa y pagás recién cuando lo tenés en la mano. Si no es lo que esperabas, no lo recibís y listo.`]},
+    benefits:{title:"Lo que lo hace diferente", items:[
+      {icon:"✅", title:"Calidad comprobada", text:"Materiales resistentes pensados para el uso diario."},
+      {icon:"🚚", title:"Envío a todo el país", text:"Llega a tu puerta estés donde estés."},
+      {icon:"💵", title:"Pagás al recibir", text:"Sin tarjeta, sin adelantos, sin riesgo."},
+      {icon:"⚡", title:"Fácil de usar", text:"Lo sacás de la caja y ya lo estás usando."},
+      {icon:"🎁", title:"Ideal para regalar", text:"Queda bien con cualquiera y siempre sorprende."},
+      {icon:"💬", title:"Atención real", text:"Te respondemos por WhatsApp, personas, no bots."}]},
+    social:{title:"Lo que dicen quienes ya lo tienen", items:[
+      {name:"Marcela G.", city:"Rosario", stars:5, text:"Llegó rapidísimo y es tal cual las fotos. Pagué cuando me lo trajeron, súper cómodo."},
+      {name:"Damián R.", city:"CABA", stars:5, text:"Dudaba porque nunca compro online, pero al pagar contra entrega me animé. Muy conforme."},
+      {name:"Vanina S.", city:"Córdoba", stars:4, text:"Muy buena calidad por el precio. Ya encargué otro para regalarle a mi mamá."}]},
+    offer:{title:t.offerT, note:t.note, cta:t.offerCta},
+    faq:{title:"Preguntas frecuentes", items:[
+      {q:"¿Cómo pago?", a:"Contra entrega: pagás en efectivo o transferencia recién cuando el producto llega a tu casa."},
+      {q:"¿Cuánto tarda el envío?", a:"Entre 3 y 7 días hábiles según tu zona. Te avisamos por WhatsApp cuando sale."},
+      {q:"¿Y si no me gusta cuando llega?", a:"No lo recibís y no pagás nada. Así de simple."},
+      {q:"¿Tiene garantía?", a:"Sí, 30 días por cualquier falla de fábrica. Lo cambiamos sin vueltas."},
+      {q:"¿Hacen envíos a todo el país?", a:"Sí, llegamos a todas las provincias de Argentina."}]},
+    cta:{title:t.ctaT, sub:t.ctaS, button:"Pedir por WhatsApp", codTitle:"Pedilo contra entrega", codBtn:"Enviar pedido"},
+    imagePrompts:[
+      `Professional product photography of ${name}, hero shot on clean seamless studio background, soft diffused lighting, high detail, commercial e-commerce style, 4k`,
+      `Lifestyle photo of a person happily using ${name} at home in Argentina, natural window light, warm and authentic, shallow depth of field`,
+      `Extreme close-up macro detail of ${name} showing texture and build quality, dramatic studio lighting, dark elegant background`]
+  };
+}
+
+function applyGenerated(g, info){
+  const m=model;
+  m.product.name = g.productName || info.name;
+  ["hero","desc","benefits","social","offer","faq","cta"].forEach(k=>{
+    if(g[k]) Object.assign(m[k], g[k]);
+  });
+  m.imagePrompts = Array.isArray(g.imagePrompts)? g.imagePrompts : [];
+}
+
+async function generate(){
+  const raw=$("#inpProduct").value.trim();
+  if(!raw){ toast("Escribí o pegá el producto primero 😉"); $("#inpProduct").focus(); return; }
+  const btn=$("#btnGen");
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span>Generando…';
+  const info=parseInput(raw);
+  model.product.price=$("#inpPrice").value.trim();
+  model.product.oldPrice=$("#inpOld").value.trim();
+  model.whatsapp=$("#inpWa").value.replace(/[^\d]/g,"");
+  try{
+    let g=null;
+    if(aiAvailable){
+      try{ g=await aiGenerate(info, model.tone); }
+      catch(e){ console.warn("Fallo IA, uso plantilla:", e); toast("La IA no respondió bien — usé el motor de plantillas."); }
+    }
+    if(!g) g=templateGenerate(info, model.tone);
+    applyGenerated(g, info);
+    save(); renderAll();
+    $("#emptyState").style.display="none";
+    toast(aiAvailable&&g ? "Página generada ✨ Hacé clic en cualquier texto para editarlo" : "Página generada — editá los textos haciendo clic encima");
+  } finally {
+    btn.disabled=false; btn.innerHTML="✨ Generar página";
+  }
+}
+
+/* ================================================================
+   RENDER DE LA PÁGINA (compartido entre preview y export)
+================================================================ */
+const GP_CSS = `
+.gp{--bg:{{bg}};--surface:{{surface}};--ink:{{ink}};--mut:{{mut}};--acc:{{acc}};--acc2:{{acc2}};--accInk:{{accInk}};
+  background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.gp,.gp *{box-sizing:border-box;margin:0;padding:0}
+.gp img{max-width:100%;display:block}
+.gp .wrap{max-width:980px;margin:0 auto;padding:0 22px}
+.gp section{padding:56px 0}
+.gp h1,.gp h2{line-height:1.15;text-wrap:balance;letter-spacing:-.015em}
+.gp h2{font-size:clamp(24px,3.4vw,34px);margin-bottom:14px}
+.gp .center{text-align:center}
+.gp .btn-cta{display:inline-block;background:var(--acc);color:var(--accInk);text-decoration:none;font-weight:700;
+  padding:16px 34px;border-radius:{{radius}};font-size:17px;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s;
+  box-shadow:0 8px 24px -8px var(--acc)}
+.gp .btn-cta:hover{transform:translateY(-2px)}
+/* hero */
+.gp .hero{background:linear-gradient(170deg,var(--surface),var(--bg) 70%);padding:64px 0 56px}
+.gp .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
+.gp .badge{display:inline-block;background:var(--acc2);color:var(--bg);font-size:12.5px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;padding:7px 14px;border-radius:999px;margin-bottom:18px}
+.gp .hero h1{font-size:clamp(30px,4.6vw,48px);margin-bottom:16px}
+.gp .hero .sub{font-size:clamp(16px,2vw,19px);color:var(--mut);margin-bottom:26px;max-width:34em}
+.gp .imgbox{border-radius:18px;overflow:hidden;background:var(--surface);aspect-ratio:1/1;display:grid;place-items:center}
+.gp .imgbox img{width:100%;height:100%;object-fit:cover}
+.gp .ph{color:var(--mut);text-align:center;font-size:14px;padding:20px}
+.gp .ph b{display:block;font-size:44px;margin-bottom:8px}
+/* descripción */
+.gp .desc p{max-width:62ch;margin:0 auto 16px;font-size:16.5px}
+.gp .gallery{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:30px auto 0}
+.gp .gallery .imgbox{aspect-ratio:4/3;border-radius:14px}
+/* beneficios */
+.gp .benefits{background:var(--surface)}
+.gp .bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
+.gp .bcard{background:var(--bg);border-radius:{{radius}};padding:22px}
+.gp .bcard .ic{font-size:26px;margin-bottom:10px}
+.gp .bcard h3{font-size:16px;margin-bottom:6px}
+.gp .bcard p{font-size:14px;color:var(--mut)}
+/* social */
+.gp .tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
+.gp .tcard{background:var(--surface);border-radius:{{radius}};padding:22px;display:flex;flex-direction:column;gap:10px}
+.gp .stars{color:var(--acc);letter-spacing:2px;font-size:15px}
+.gp .tcard p{font-size:14.5px;flex:1}
+.gp .tcard .who{font-size:13px;color:var(--mut);font-weight:600}
+/* oferta */
+.gp .offer{background:var(--acc2);color:var(--bg)}
+.gp .offer h2{color:var(--bg)}
+.gp .offer .note{opacity:.85;margin-bottom:22px}
+.gp .pricebox{display:flex;align-items:baseline;justify-content:center;gap:16px;margin:18px 0 6px;flex-wrap:wrap}
+.gp .old{text-decoration:line-through;opacity:.55;font-size:clamp(18px,2.6vw,24px)}
+.gp .now{font-size:clamp(38px,6vw,58px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.gp .count{display:flex;gap:10px;justify-content:center;margin:22px 0}
+.gp .count div{background:var(--bg);color:var(--ink);border-radius:10px;padding:10px 14px;min-width:64px}
+.gp .count b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.gp .count span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.gp .stockbar{max-width:300px;margin:0 auto 24px}
+.gp .stockbar .bar{height:8px;border-radius:99px;background:color-mix(in srgb,var(--bg) 25%,transparent);overflow:hidden}
+.gp .stockbar .bar i{display:block;height:100%;width:26%;background:var(--acc);border-radius:99px}
+.gp .stockbar p{font-size:13px;margin-top:8px;opacity:.9}
+/* faq */
+.gp .faq details{border-bottom:1px solid color-mix(in srgb,var(--ink) 14%,transparent);max-width:680px;margin:0 auto}
+.gp .faq summary{cursor:pointer;font-weight:600;padding:16px 4px;font-size:16px;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.gp .faq summary::after{content:"+";color:var(--acc);font-size:20px;font-weight:400}
+.gp .faq details[open] summary::after{content:"–"}
+.gp .faq details p{padding:0 4px 16px;color:var(--mut);font-size:15px}
+/* cta final */
+.gp .ctafinal{background:var(--surface)}
+.gp .ctafinal .sub{color:var(--mut);max-width:38em;margin:0 auto 26px;font-size:17px}
+.gp .codform{max-width:420px;margin:34px auto 0;background:var(--bg);border-radius:16px;padding:26px;text-align:left;
+  box-shadow:0 14px 40px -18px color-mix(in srgb,var(--ink) 40%,transparent)}
+.gp .codform h3{margin-bottom:14px;font-size:18px;text-align:center}
+.gp .codform label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+.gp .codform input,.gp .codform textarea{width:100%;border:1.5px solid color-mix(in srgb,var(--ink) 18%,transparent);
+  border-radius:9px;padding:11px 12px;font:inherit;background:var(--bg);color:var(--ink)}
+.gp .codform button{width:100%;margin-top:18px}
+.gp .wa-ic{display:inline-block;margin-right:8px}
+.gp footer{padding:26px 0;text-align:center;font-size:13px;color:var(--mut)}
+@media(max-width:760px){
+  .gp .hero .wrap{grid-template-columns:1fr}
+  .gp .hero .imgbox{order:-1;max-width:340px;margin:0 auto}
+  .gp .bgrid,.gp .tgrid{grid-template-columns:1fr}
+  .gp .gallery{grid-template-columns:1fr}
+  .gp section{padding:44px 0}
+}
+`;
+const TONE_CSS = {
+  urgente: `.gp{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.gp h1,.gp h2{font-weight:800}.gp .btn-cta{text-transform:uppercase;letter-spacing:.04em}`,
+  premium: `.gp{font-family:Georgia,"Times New Roman",serif}
+.gp .sub,.gp p,.gp .btn-cta,.gp .badge,.gp .codform,.gp .who,.gp .stars,.gp .count,.gp .stockbar,.gp footer,.gp summary
+{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.gp h1,.gp h2{font-weight:600;letter-spacing:0}.gp .btn-cta{font-weight:600}`,
+  minimalista: `.gp{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.gp h1{font-weight:650}.gp h2{font-weight:600}.gp .badge{background:transparent;color:var(--mut);border:1px solid var(--mut)}
+.gp .btn-cta{box-shadow:none}`
+};
+function gpCSS(){
+  const p=PALETTES[model.palette];
+  const radius = model.tone==="minimalista" ? "6px" : model.tone==="premium" ? "12px" : "10px";
+  return GP_CSS.replaceAll("{{bg}}",p.bg).replaceAll("{{surface}}",p.surface).replaceAll("{{ink}}",p.ink)
+    .replaceAll("{{mut}}",p.mut).replaceAll("{{acc}}",p.acc).replaceAll("{{acc2}}",p.acc2)
+    .replaceAll("{{accInk}}",p.accInk).replaceAll("{{radius}}",radius) + TONE_CSS[model.tone];
+}
+
+function waLink(text){
+  const n=model.whatsapp||"";
+  const msg=encodeURIComponent(text);
+  return n ? `https://wa.me/${n}?text=${msg}` : "#pedido";
+}
+function imgOr(key, phEmoji, phText, cls){
+  const src=model.images[key];
+  if(src) return `<div class="imgbox ${cls||""}"><img src="${src}" alt="${esc(model.product.name)}"></div>`;
+  return `<div class="imgbox ${cls||""}"><div class="ph"><b>${phEmoji}</b>${phText}</div></div>`;
+}
+function ed(path, tag, cls, editable){
+  const val=getPath(model,path);
+  const attr=editable?` contenteditable="true" data-path="${path}" spellcheck="false"`:"";
+  return `<${tag}${cls?` class="${cls}"`:""}${attr}>${esc(val)}</${tag}>`;
+}
+
+function sectionHTML(key, editable){
+  const m=model, wa=t=>waLink(t);
+  switch(key){
+  case "hero": return `<section class="hero"><div class="wrap">
+    <div>
+      ${ed("hero.badge","span","badge",editable)}
+      ${ed("hero.headline","h1","",editable)}
+      ${ed("hero.sub","p","sub",editable)}
+      <a class="btn-cta" href="${wa(`¡Hola! Quiero pedir: ${m.product.name}`)}">${esc(m.hero.cta)}</a>
+    </div>
+    ${imgOr("hero","📦","Subí la imagen principal<br>desde el panel de la izquierda")}
+  </div></section>`;
+
+  case "desc": return `<section class="desc"><div class="wrap center">
+    ${ed("desc.title","h2","",editable)}
+    ${m.desc.paragraphs.map((_,i)=>ed(`desc.paragraphs.${i}`,"p","",editable)).join("")}
+    <div class="gallery">${imgOr("g1","🖼️","Galería 1")}${imgOr("g2","🔍","Galería 2")}</div>
+  </div></section>`;
+
+  case "benefits": return `<section class="benefits"><div class="wrap center">
+    ${ed("benefits.title","h2","",editable)}
+    <div class="bgrid">${m.benefits.items.map((b,i)=>`
+      <div class="bcard">
+        ${ed(`benefits.items.${i}.icon`,"div","ic",editable)}
+        ${ed(`benefits.items.${i}.title`,"h3","",editable)}
+        ${ed(`benefits.items.${i}.text`,"p","",editable)}
+      </div>`).join("")}
+    </div>
+  </div></section>`;
+
+  case "social": return `<section class="social"><div class="wrap center">
+    ${ed("social.title","h2","",editable)}
+    <div class="tgrid">${m.social.items.map((t,i)=>`
+      <div class="tcard">
+        <div class="stars">${"★".repeat(t.stars||5)}${"☆".repeat(5-(t.stars||5))}</div>
+        ${ed(`social.items.${i}.text`,"p","",editable)}
+        <div class="who">${esc(t.name)} — ${esc(t.city)}</div>
+      </div>`).join("")}
+    </div>
+  </div></section>`;
+
+  case "offer": {
+    const now=fmtPrice(m.product.price)||"$ —";
+    const old=fmtPrice(m.product.oldPrice);
+    return `<section class="offer"><div class="wrap center">
+    ${ed("offer.title","h2","",editable)}
+    ${ed("offer.note","p","note",editable)}
+    <div class="pricebox">${old?`<span class="old">${old}</span>`:""}<span class="now">${now}</span></div>
+    <div class="count" data-hours="${m.offer.hours}">
+      <div><b data-cd="h">23</b><span>horas</span></div>
+      <div><b data-cd="m">59</b><span>min</span></div>
+      <div><b data-cd="s">42</b><span>seg</span></div>
+    </div>
+    <div class="stockbar"><div class="bar"><i style="width:${Math.min(90,Math.max(8,m.offer.stock*4))}%"></i></div>
+      <p>🔥 Quedan solo <b>${m.offer.stock}</b> unidades disponibles</p></div>
+    <a class="btn-cta" href="${wa(`¡Hola! Quiero aprovechar la oferta de: ${m.product.name}`)}">${esc(m.offer.cta)}</a>
+  </div></section>`; }
+
+  case "faq": return `<section class="faq"><div class="wrap center">
+    ${ed("faq.title","h2","",editable)}
+    <div style="text-align:left">${m.faq.items.map((f,i)=>`
+      <details${i===0?" open":""}>
+        <summary>${ed(`faq.items.${i}.q`,"span","",editable)}</summary>
+        ${ed(`faq.items.${i}.a`,"p","",editable)}
+      </details>`).join("")}
+    </div>
+  </div></section>`;
+
+  case "cta": return `<section class="ctafinal" id="pedido"><div class="wrap center">
+    ${ed("cta.title","h2","",editable)}
+    ${ed("cta.sub","p","sub",editable)}
+    <a class="btn-cta" href="${wa(`¡Hola! Quiero pedir: ${m.product.name} (pago contra entrega)`)}"><span class="wa-ic">💬</span>${esc(m.cta.button)}</a>
+    ${m.cod?`<form class="codform" data-cod="1">
+      <h3>${esc(m.cta.codTitle)}</h3>
+      <label>Nombre y apellido</label><input name="nombre" required placeholder="Tu nombre">
+      <label>Teléfono / WhatsApp</label><input name="telefono" required placeholder="11 2233 4455" inputmode="tel">
+      <label>Dirección de entrega</label><textarea name="direccion" rows="2" required placeholder="Calle, número, localidad, provincia"></textarea>
+      <button class="btn-cta" type="submit">${esc(m.cta.codBtn)}</button>
+    </form>`:""}
+  </div></section>`;
+  }
+  return "";
+}
+
+function pageBody(editable){
+  return model.order.filter(k=>model.enabled[k]).map(k=>sectionHTML(k,editable)).join("\n")
+    + `<footer>© ${new Date().getFullYear()} — Todos los derechos reservados · Pago contra entrega en toda Argentina</footer>`;
+}
+
+/* script del contador + formulario, se incluye en el export y en la preview */
+function pageScript(){
+  return `(function(){
+  var c=document.querySelector(".count");
+  if(c){var hrs=parseFloat(c.getAttribute("data-hours"))||24,KEY="gp-deadline";
+    var dl=0;try{dl=parseInt(localStorage.getItem(KEY)||"0",10)}catch(e){}
+    if(!dl||dl<Date.now()){dl=Date.now()+hrs*3600000;try{localStorage.setItem(KEY,String(dl))}catch(e){}}
+    var eh=c.querySelector('[data-cd="h"]'),em=c.querySelector('[data-cd="m"]'),es=c.querySelector('[data-cd="s"]');
+    function tick(){var d=Math.max(0,dl-Date.now()),s=Math.floor(d/1000);
+      eh.textContent=String(Math.floor(s/3600)).padStart(2,"0");
+      em.textContent=String(Math.floor(s/60)%60).padStart(2,"0");
+      es.textContent=String(s%60).padStart(2,"0");}
+    tick();setInterval(tick,1000);}
+  var f=document.querySelector('[data-cod="1"]');
+  if(f){f.addEventListener("submit",function(ev){ev.preventDefault();
+    var d=new FormData(f);
+    var msg="¡Hola! Quiero pedir contra entrega:%0A• Producto: ${encodeURIComponent(model.product.name)}%0A• Nombre: "+encodeURIComponent(d.get("nombre"))+"%0A• Tel: "+encodeURIComponent(d.get("telefono"))+"%0A• Dirección: "+encodeURIComponent(d.get("direccion"));
+    ${model.whatsapp?`window.open("https://wa.me/${model.whatsapp}?text="+msg,"_blank");`:`alert("Configurá tu número de WhatsApp en el generador para activar el formulario.");`}
+  });}
+})();`;
+}
+
+/* ================================================================
+   PREVIEW
+================================================================ */
+function renderPreview(){
+  if(!model.product.name) return;
+  let st=$("#gpStyles");
+  if(!st){ st=document.createElement("style"); st.id="gpStyles"; document.head.appendChild(st); }
+  st.textContent=gpCSS();
+  const pv=$("#preview");
+  pv.innerHTML=`<div class="gp">${pageBody(true)}</div>`;
+  pv.querySelectorAll(".count").forEach(c=>{ /* contador estático en preview */ });
+  // edición en línea
+  pv.querySelectorAll("[contenteditable]").forEach(el=>{
+    el.addEventListener("input",()=>{ setPath(model, el.dataset.path, el.innerText); save(); });
+    el.addEventListener("keydown",e=>{ if(e.key==="Enter" && el.tagName!=="P"){ e.preventDefault(); el.blur(); } });
+  });
+  // editar la pregunta del FAQ sin que el acordeón se abra/cierre
+  pv.querySelectorAll(".faq summary [contenteditable]").forEach(el=>
+    el.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); el.focus(); }));
+  // evitar que los links naveguen en la preview
+  pv.querySelectorAll("a.btn-cta").forEach(a=>a.addEventListener("click",e=>e.preventDefault()));
+  pv.querySelectorAll('[data-cod="1"]').forEach(f=>f.addEventListener("submit",e=>e.preventDefault()));
+}
+
+/* ================================================================
+   PANEL LATERAL
+================================================================ */
+function renderTones(){
+  $("#toneChips").innerHTML=Object.entries(TONES).map(([k,t])=>
+    `<button class="chip ${model.tone===k?"on":""}" onclick="setTone('${k}')">${t.name}</button>`).join("");
+}
+function setTone(k){ model.tone=k; save(); renderTones(); renderPreview(); }
+
+function renderSwatches(){
+  $("#swatches").innerHTML=Object.entries(PALETTES).map(([k,p])=>
+    `<button class="swatch ${model.palette===k?"on":""}" onclick="setPalette('${k}')" aria-label="Paleta ${p.name}">
+      <span class="dots"><i style="background:${p.bg}"></i><i style="background:${p.surface}"></i><i style="background:${p.acc}"></i><i style="background:${p.acc2}"></i></span>
+      <span>${p.name}</span></button>`).join("");
+}
+function setPalette(k){ model.palette=k; save(); renderSwatches(); renderPreview(); }
+
+function renderSecList(){
+  const el=$("#seclist");
+  el.innerHTML=model.order.map(k=>`
+    <div class="secitem ${model.enabled[k]?"":"off"}" draggable="true" data-key="${k}">
+      <span class="grip" aria-hidden="true">⋮⋮</span>
+      <span class="name">${SECTION_META[k].name}</span>
+      <div class="sw ${model.enabled[k]?"on":""}" role="switch" aria-checked="${model.enabled[k]}" tabindex="0"
+        onclick="toggleSec('${k}')" onkeydown="if(event.key==='Enter'||event.key===' ')toggleSec('${k}')"></div>
+    </div>`).join("");
+  let dragKey=null;
+  el.querySelectorAll(".secitem").forEach(item=>{
+    item.addEventListener("dragstart",()=>{ dragKey=item.dataset.key; item.classList.add("dragging"); });
+    item.addEventListener("dragend",()=>{ item.classList.remove("dragging"); el.querySelectorAll(".dragover").forEach(x=>x.classList.remove("dragover")); });
+    item.addEventListener("dragover",e=>{ e.preventDefault(); item.classList.add("dragover"); });
+    item.addEventListener("dragleave",()=>item.classList.remove("dragover"));
+    item.addEventListener("drop",e=>{
+      e.preventDefault();
+      const target=item.dataset.key;
+      if(!dragKey||dragKey===target) return;
+      const o=model.order.filter(k=>k!==dragKey);
+      o.splice(o.indexOf(target)+(o.indexOf(target)>=model.order.indexOf(dragKey)?1:0),0,dragKey);
+      // inserción simple: antes del target si venía de abajo, después si venía de arriba
+      model.order=o; save(); renderSecList(); renderPreview();
+    });
+  });
+}
+function toggleSec(k){ model.enabled[k]=!model.enabled[k]; save(); renderSecList(); renderPreview(); }
+
+function renderImgSlots(){
+  $("#imgslots").innerHTML=IMG_SLOTS.map(s=>{
+    const has=!!model.images[s.key];
+    return `<div class="imgslot">
+      <div class="thumb" style="${has?`background-image:url('${model.images[s.key]}')`:""}">${has?"":"🖼"}</div>
+      <div class="meta"><b>${s.label}</b><span>${has?"Imagen cargada ✓":s.desc}</span></div>
+      <div class="acts">
+        <button class="mini" onclick="pickImg('${s.key}')">${has?"Cambiar":"Subir"}</button>
+        ${has?`<button class="mini" onclick="clearImg('${s.key}')">✕</button>`:""}
+      </div></div>`;
+  }).join("");
+}
+function pickImg(key){
+  const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
+  inp.onchange=()=>{
+    const f=inp.files[0]; if(!f) return;
+    if(f.size>2.5*1024*1024){ toast("La imagen es muy pesada (máx 2,5 MB). Comprimila en tinypng.com"); return; }
+    const r=new FileReader();
+    r.onload=()=>{ model.images[key]=r.result; save(); renderImgSlots(); renderPreview(); toast("Imagen cargada ✓"); };
+    r.readAsDataURL(f);
+  };
+  inp.click();
+}
+function clearImg(key){ model.images[key]=null; save(); renderImgSlots(); renderPreview(); }
+
+function openPrompts(){
+  if(!model.imagePrompts.length){ toast("Primero generá la página, así los prompts salen de tu producto."); return; }
+  const labels=["Hero shot (foto principal)","Lifestyle (en uso)","Detalle / calidad"];
+  $("#promptList").innerHTML=model.imagePrompts.map((p,i)=>`
+    <div class="promptcard"><b>${labels[i]||"Prompt "+(i+1)}</b><p>${esc(p)}</p>
+    <button class="mini" onclick="copyText(this,${i})">Copiar prompt</button></div>`).join("");
+  $("#promptModal").classList.add("open");
+}
+function closePrompts(){ $("#promptModal").classList.remove("open"); }
+function copyText(btn,i){
+  navigator.clipboard.writeText(model.imagePrompts[i]).then(()=>{ btn.textContent="Copiado ✓"; setTimeout(()=>btn.textContent="Copiar prompt",1500); });
+}
+
+function toggleCod(){
+  model.cod=!model.cod; save();
+  $("#swCod").classList.toggle("on",model.cod);
+  $("#swCod").setAttribute("aria-checked",model.cod);
+  renderPreview();
+}
+function setDevice(d){
+  model.device=d; save();
+  $("#frame").classList.toggle("mobile",d==="mob");
+  $("#vDesk").classList.toggle("on",d==="desk");
+  $("#vMob").classList.toggle("on",d==="mob");
+}
+
+/* ================================================================
+   EXPORT
+================================================================ */
+function buildExport(){
+  const title=model.product.name||"Página de producto";
+  const desc=(model.hero.sub||"").slice(0,155);
+  return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)} — Envío gratis y pago contra entrega</title>
+<meta name="description" content="${esc(desc)}">
+<style>
+html,body{margin:0;padding:0}
+${gpCSS()}
+</style>
+</head>
+<body>
+<div class="gp">
+${pageBody(false)}
+</div>
+<script>
+${pageScript()}
+<\/script>
+</body>
+</html>`;
+}
+function slugify(s){ return (s||"pagina").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,50)||"pagina"; }
+function exportHTML(){
+  if(!model.product.name){ toast("Generá la página primero 😉"); return; }
+  model.whatsapp=$("#inpWa").value.replace(/[^\d]/g,""); save();
+  const blob=new Blob([buildExport()],{type:"text/html;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=slugify(model.product.name)+".html";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+  toast("HTML descargado — subilo a Netlify Drop, Tiendanube o tu hosting 🚀");
+}
+function copyHTML(){
+  if(!model.product.name){ toast("Generá la página primero 😉"); return; }
+  model.whatsapp=$("#inpWa").value.replace(/[^\d]/g,""); save();
+  navigator.clipboard.writeText(buildExport()).then(()=>toast("HTML copiado al portapapeles ✓"));
+}
+
+/* ================================================================
+   INICIO
+================================================================ */
+function renderAll(){ renderTones(); renderSwatches(); renderSecList(); renderImgSlots(); renderPreview(); }
+function resetAll(){
+  if(!confirm("¿Borrar todo y empezar de cero?")) return;
+  try{ localStorage.removeItem("yt-pagegen"); }catch(e){}
+  model=defaultModel();
+  $("#inpProduct").value=""; $("#inpPrice").value=""; $("#inpOld").value=""; $("#inpWa").value="";
+  $("#preview").innerHTML=""; $("#emptyState").style.display="";
+  renderAll();
+}
+(function init(){
+  try{ model=JSON.parse(localStorage.getItem("yt-pagegen"))||defaultModel(); }
+  catch(e){ model=defaultModel(); }
+  // merge por si hay campos nuevos
+  model=Object.assign(defaultModel(), model);
+  detectAI();
+  $("#inpWa").value=model.whatsapp||"";
+  $("#inpPrice").value=model.product.price||"";
+  $("#inpOld").value=model.product.oldPrice||"";
+  $("#swCod").classList.toggle("on",model.cod);
+  setDevice(model.device||"desk");
+  renderAll();
+  if(model.product.name){ $("#emptyState").style.display="none"; }
+  $("#promptModal").addEventListener("click",e=>{ if(e.target.id==="promptModal") closePrompts(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePrompts(); });
+})();
+</script>
+<!-- ART-END -->
+</body>
+</html>
