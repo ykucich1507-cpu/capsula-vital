@@ -127,11 +127,11 @@ input,textarea,select{font:inherit;color:inherit}
   </div>
   <div class="spacer"></div>
   <div class="seg" role="group" aria-label="Vista previa">
-    <button id="vDesk" class="on" onclick="setDevice('desk')">🖥 Escritorio</button>
-    <button id="vMob" onclick="setDevice('mob')">📱 Móvil</button>
+    <button id="vDesk" class="on">🖥 Escritorio</button>
+    <button id="vMob">📱 Móvil</button>
   </div>
-  <button class="btn ghost" onclick="copyHTML()">Copiar HTML</button>
-  <button class="btn primary" onclick="exportHTML()">⬇ Exportar HTML</button>
+  <button class="btn ghost" id="btnCopy">Copiar HTML</button>
+  <button class="btn primary" id="btnExport">⬇ Exportar HTML</button>
 </header>
 
 <div class="app">
@@ -147,7 +147,7 @@ input,textarea,select{font:inherit;color:inherit}
     <div style="flex:1"><label for="inpOld">Precio tachado</label><input id="inpOld" type="text" placeholder="39.999" inputmode="numeric"></div>
   </div>
   <div class="gen-row">
-    <button class="btn primary" id="btnGen" onclick="generate()">✨ Generar página</button>
+    <button class="btn primary" id="btnGen">✨ Generar página</button>
   </div>
   <div class="ai-note" id="aiNote">Detectando IA de Claude…</div>
 
@@ -162,7 +162,7 @@ input,textarea,select{font:inherit;color:inherit}
 
   <h3>5 · Imágenes</h3>
   <div class="imgslots" id="imgslots"></div>
-  <button class="btn ghost" style="width:100%;margin-top:8px" onclick="openPrompts()">🎨 Prompts de imagen para IA</button>
+  <button class="btn ghost" style="width:100%;margin-top:8px" id="btnPrompts">🎨 Prompts de imagen para IA</button>
   <p class="hint">Subí fotos reales del producto (quedan incrustadas en el HTML exportado) o copiá los prompts para generarlas en Ideogram, Leonardo o Midjourney.</p>
 
   <h3>6 · Contacto / Contra entrega</h3>
@@ -171,12 +171,12 @@ input,textarea,select{font:inherit;color:inherit}
     <input id="inpWa" type="text" placeholder="5491122334455" inputmode="numeric">
   </div>
   <div class="field" style="display:flex;align-items:center;gap:10px">
-    <div class="sw on" id="swCod" onclick="toggleCod()" role="switch" aria-checked="true" tabindex="0"></div>
+    <div class="sw on" id="swCod" role="switch" aria-checked="true" tabindex="0"></div>
     <label style="margin:0;color:var(--ink)">Formulario de pedido contra entrega</label>
   </div>
 
   <div style="margin-top:26px;display:flex;gap:8px">
-    <button class="btn ghost" style="flex:1" onclick="resetAll()">Reiniciar todo</button>
+    <button class="btn ghost" style="flex:1" id="btnReset">Reiniciar todo</button>
   </div>
 </aside>
 
@@ -197,7 +197,7 @@ input,textarea,select{font:inherit;color:inherit}
     <h2>🎨 Prompts de imagen listos para copiar</h2>
     <p class="sub">Pegalos en Ideogram, Leonardo.ai (gratis) o Midjourney. Están en inglés porque esos modelos rinden mejor así.</p>
     <div id="promptList"></div>
-    <div class="close-row"><button class="btn" onclick="closePrompts()">Cerrar</button></div>
+    <div class="close-row"><button class="btn" id="btnClosePrompts">Cerrar</button></div>
   </div>
 </div>
 <div id="toast" role="status"></div>
@@ -263,6 +263,18 @@ function defaultModel(){
 const $ = s => document.querySelector(s);
 function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2600);}
+function fallbackCopy(text){
+  const ta=document.createElement("textarea"); ta.value=text;
+  ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  let ok=false; try{ ok=document.execCommand("copy"); }catch(e){}
+  ta.remove(); return ok;
+}
+function copyToClipboard(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    return navigator.clipboard.writeText(text).then(()=>true).catch(()=>fallbackCopy(text));
+  return Promise.resolve(fallbackCopy(text));
+}
 function fmtPrice(v){
   const n=String(v||"").replace(/[^\d]/g,"");
   if(!n) return "";
@@ -673,13 +685,13 @@ function renderPreview(){
 ================================================================ */
 function renderTones(){
   $("#toneChips").innerHTML=Object.entries(TONES).map(([k,t])=>
-    `<button class="chip ${model.tone===k?"on":""}" onclick="setTone('${k}')">${t.name}</button>`).join("");
+    `<button class="chip ${model.tone===k?"on":""}" data-tone="${k}">${t.name}</button>`).join("");
 }
 function setTone(k){ model.tone=k; save(); renderTones(); renderPreview(); }
 
 function renderSwatches(){
   $("#swatches").innerHTML=Object.entries(PALETTES).map(([k,p])=>
-    `<button class="swatch ${model.palette===k?"on":""}" onclick="setPalette('${k}')" aria-label="Paleta ${p.name}">
+    `<button class="swatch ${model.palette===k?"on":""}" data-palette="${k}" aria-label="Paleta ${p.name}">
       <span class="dots"><i style="background:${p.bg}"></i><i style="background:${p.surface}"></i><i style="background:${p.acc}"></i><i style="background:${p.acc2}"></i></span>
       <span>${p.name}</span></button>`).join("");
 }
@@ -691,8 +703,7 @@ function renderSecList(){
     <div class="secitem ${model.enabled[k]?"":"off"}" draggable="true" data-key="${k}">
       <span class="grip" aria-hidden="true">⋮⋮</span>
       <span class="name">${SECTION_META[k].name}</span>
-      <div class="sw ${model.enabled[k]?"on":""}" role="switch" aria-checked="${model.enabled[k]}" tabindex="0"
-        onclick="toggleSec('${k}')" onkeydown="if(event.key==='Enter'||event.key===' ')toggleSec('${k}')"></div>
+      <div class="sw ${model.enabled[k]?"on":""}" role="switch" aria-checked="${model.enabled[k]}" tabindex="0" data-toggle="${k}"></div>
     </div>`).join("");
   let dragKey=null;
   el.querySelectorAll(".secitem").forEach(item=>{
@@ -720,8 +731,8 @@ function renderImgSlots(){
       <div class="thumb" style="${has?`background-image:url('${model.images[s.key]}')`:""}">${has?"":"🖼"}</div>
       <div class="meta"><b>${s.label}</b><span>${has?"Imagen cargada ✓":s.desc}</span></div>
       <div class="acts">
-        <button class="mini" onclick="pickImg('${s.key}')">${has?"Cambiar":"Subir"}</button>
-        ${has?`<button class="mini" onclick="clearImg('${s.key}')">✕</button>`:""}
+        <button class="mini" data-pick="${s.key}">${has?"Cambiar":"Subir"}</button>
+        ${has?`<button class="mini" data-clear="${s.key}">✕</button>`:""}
       </div></div>`;
   }).join("");
 }
@@ -743,12 +754,15 @@ function openPrompts(){
   const labels=["Hero shot (foto principal)","Lifestyle (en uso)","Detalle / calidad"];
   $("#promptList").innerHTML=model.imagePrompts.map((p,i)=>`
     <div class="promptcard"><b>${labels[i]||"Prompt "+(i+1)}</b><p>${esc(p)}</p>
-    <button class="mini" onclick="copyText(this,${i})">Copiar prompt</button></div>`).join("");
+    <button class="mini" data-copy="${i}">Copiar prompt</button></div>`).join("");
   $("#promptModal").classList.add("open");
 }
 function closePrompts(){ $("#promptModal").classList.remove("open"); }
 function copyText(btn,i){
-  navigator.clipboard.writeText(model.imagePrompts[i]).then(()=>{ btn.textContent="Copiado ✓"; setTimeout(()=>btn.textContent="Copiar prompt",1500); });
+  copyToClipboard(model.imagePrompts[i]).then(ok=>{
+    btn.textContent=ok?"Copiado ✓":"No se pudo copiar";
+    setTimeout(()=>btn.textContent="Copiar prompt",1500);
+  });
 }
 
 function toggleCod(){
@@ -807,7 +821,7 @@ function exportHTML(){
 function copyHTML(){
   if(!model.product.name){ toast("Generá la página primero 😉"); return; }
   model.whatsapp=$("#inpWa").value.replace(/[^\d]/g,""); save();
-  navigator.clipboard.writeText(buildExport()).then(()=>toast("HTML copiado al portapapeles ✓"));
+  copyToClipboard(buildExport()).then(ok=>toast(ok?"HTML copiado al portapapeles ✓":"No se pudo copiar — usá Exportar HTML"));
 }
 
 /* ================================================================
@@ -815,7 +829,9 @@ function copyHTML(){
 ================================================================ */
 function renderAll(){ renderTones(); renderSwatches(); renderSecList(); renderImgSlots(); renderPreview(); }
 function resetAll(){
-  if(!confirm("¿Borrar todo y empezar de cero?")) return;
+  const b=$("#btnReset");
+  if(!b.dataset.armed){ b.dataset.armed="1"; b.textContent="¿Seguro? Tocá de nuevo"; setTimeout(()=>{ delete b.dataset.armed; b.textContent="Reiniciar todo"; },3000); return; }
+  delete b.dataset.armed; b.textContent="Reiniciar todo";
   try{ localStorage.removeItem("yt-pagegen"); }catch(e){}
   model=defaultModel();
   $("#inpProduct").value=""; $("#inpPrice").value=""; $("#inpOld").value=""; $("#inpWa").value="";
@@ -835,6 +851,26 @@ function resetAll(){
   setDevice(model.device||"desk");
   renderAll();
   if(model.product.name){ $("#emptyState").style.display="none"; }
+  // listeners (sin handlers inline: el sandbox de artifacts los bloquea)
+  $("#btnGen").addEventListener("click",generate);
+  $("#btnExport").addEventListener("click",exportHTML);
+  $("#btnCopy").addEventListener("click",copyHTML);
+  $("#btnPrompts").addEventListener("click",openPrompts);
+  $("#btnReset").addEventListener("click",resetAll);
+  $("#btnClosePrompts").addEventListener("click",closePrompts);
+  $("#vDesk").addEventListener("click",()=>setDevice("desk"));
+  $("#vMob").addEventListener("click",()=>setDevice("mob"));
+  $("#swCod").addEventListener("click",toggleCod);
+  $("#swCod").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleCod(); } });
+  $("#toneChips").addEventListener("click",e=>{ const b=e.target.closest("[data-tone]"); if(b) setTone(b.dataset.tone); });
+  $("#swatches").addEventListener("click",e=>{ const b=e.target.closest("[data-palette]"); if(b) setPalette(b.dataset.palette); });
+  $("#seclist").addEventListener("click",e=>{ const s=e.target.closest("[data-toggle]"); if(s) toggleSec(s.dataset.toggle); });
+  $("#seclist").addEventListener("keydown",e=>{ const s=e.target.closest("[data-toggle]"); if(s&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); toggleSec(s.dataset.toggle); } });
+  $("#imgslots").addEventListener("click",e=>{
+    const p=e.target.closest("[data-pick]"); if(p) return pickImg(p.dataset.pick);
+    const c=e.target.closest("[data-clear]"); if(c) clearImg(c.dataset.clear);
+  });
+  $("#promptList").addEventListener("click",e=>{ const b=e.target.closest("[data-copy]"); if(b) copyText(b,+b.dataset.copy); });
   $("#promptModal").addEventListener("click",e=>{ if(e.target.id==="promptModal") closePrompts(); });
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePrompts(); });
 })();
