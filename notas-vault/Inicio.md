@@ -25,6 +25,17 @@ Bienvenida a tu **base de conocimiento** estilo Obsidian. Acá está documentado
 - [[Campañas Activas]] — estado actual de cada campaña
 - [[Productos y Precios]] — catálogo de ofertas vigente
 
+## ☁️ Proyectos en la nube
+
+- [[Proyectos en la Nube]] — **índice de las 20 ramas** con todo lo que Claude construyó
+- [[Checkout Mercado Pago y Bot WhatsApp]] — cobro con MP dentro del chat
+- [[Landing Hidrolavadora]] — landing AIDA con formulario de pedido
+- [[Funnel Inteligente con IA]] — funnel conversacional avanzado
+- [[Generadores de Contenido y Creatividades]] — páginas, carruseles, videos y diseños
+- [[Automatizaciones n8n Extra]] — 17 workflows adicionales (Instagram, Google Ads, stock)
+- [[Agente de Emails Gmail]] — clasifica mails y redacta borradores
+- [[Servidores MCP Propios]] — conectores de Dropi e Instagram para Claude
+
 ## 🚨 Importante
 
 - [[Reglas Críticas]] — lo que **nunca** hay que tocar sin confirmar
